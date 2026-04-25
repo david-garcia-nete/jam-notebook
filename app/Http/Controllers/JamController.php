@@ -44,6 +44,10 @@ class JamController extends Controller
 
         $jam->load(['patterns' => fn ($query) => $query
             ->where('user_id', auth()->id())
+            ->orderByRaw(
+                "CASE jam_pattern.section WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 WHEN ? THEN 5 WHEN ? THEN 6 ELSE 7 END",
+                Jam::SECTIONS
+            )
             ->orderBy('jam_pattern.section')
             ->orderBy('jam_pattern.position')
             ->orderBy('patterns.created_at', 'desc')]);
@@ -99,16 +103,18 @@ class JamController extends Controller
         $pattern = Pattern::query()->findOrFail($validated['pattern_id']);
         abort_if($pattern->user_id !== auth()->id(), 403);
 
+        $section = Jam::normalizeSection($validated['section']);
+
         $alreadyAttached = $jam->patterns()->where('patterns.id', $pattern->id)->exists();
 
         if (! $alreadyAttached) {
             $nextPosition = (int) DB::table('jam_pattern')
                 ->where('jam_id', $jam->id)
-                ->where('section', $validated['section'])
+                ->where('section', $section)
                 ->max('position') + 1;
 
             $jam->patterns()->attach($pattern->id, [
-                'section' => $validated['section'],
+                'section' => $section,
                 'position' => $nextPosition,
             ]);
         }
@@ -126,6 +132,8 @@ class JamController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $section = Jam::normalizeSection($validated['section']);
+
         $pivot = DB::table('jam_pattern')
             ->where('jam_id', $jam->id)
             ->where('pattern_id', $pattern->id)
@@ -133,19 +141,19 @@ class JamController extends Controller
 
         abort_if($pivot === null, 404);
 
-        $sectionChanged = $pivot->section !== $validated['section'];
+        $sectionChanged = $pivot->section !== $section;
 
         $position = (int) $pivot->position;
 
         if ($sectionChanged) {
             $position = (int) DB::table('jam_pattern')
                 ->where('jam_id', $jam->id)
-                ->where('section', $validated['section'])
+                ->where('section', $section)
                 ->max('position') + 1;
         }
 
         $jam->patterns()->updateExistingPivot($pattern->id, [
-            'section' => $validated['section'],
+            'section' => $section,
             'position' => $position,
             'notes' => $validated['notes'],
         ]);

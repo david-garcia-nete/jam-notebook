@@ -159,6 +159,65 @@ class JamTest extends TestCase
         ]);
     }
 
+    public function test_attaching_pattern_normalizes_lowercase_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create();
+
+        $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
+            'pattern_id' => $pattern->id,
+            'section' => 'verse',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Verse',
+            'position' => 1,
+        ]);
+    }
+
+    public function test_updating_placement_normalizes_uppercase_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create();
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)->post(route('jams.patterns.update', [$jam, $pattern]), [
+            'section' => 'CHORUS',
+            'notes' => 'big ending',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Chorus',
+            'position' => 1,
+            'notes' => 'big ending',
+        ]);
+    }
+
+    public function test_attaching_pattern_normalizes_pre_chorus_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create();
+
+        $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
+            'pattern_id' => $pattern->id,
+            'section' => 'pre-chorus',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Pre-Chorus',
+            'position' => 1,
+        ]);
+    }
+
     public function test_user_can_detach_pattern_from_jam(): void
     {
         $user = User::factory()->create();
@@ -198,6 +257,29 @@ class JamTest extends TestCase
         $response->assertSee('Chorus');
         $response->assertSee('Intro Drone');
         $response->assertSee('Chorus Hook');
+    }
+
+    public function test_jam_show_page_displays_sections_in_musical_order(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $chorusPattern = Pattern::factory()->for($user)->create(['title' => 'Chorus Pattern']);
+        $introPattern = Pattern::factory()->for($user)->create(['title' => 'Intro Pattern']);
+        $versePattern = Pattern::factory()->for($user)->create(['title' => 'Verse Pattern']);
+
+        $jam->patterns()->attach($chorusPattern, ['section' => 'Chorus', 'position' => 1]);
+        $jam->patterns()->attach($introPattern, ['section' => 'Intro', 'position' => 1]);
+        $jam->patterns()->attach($versePattern, ['section' => 'Verse', 'position' => 1]);
+
+        $response = $this->actingAs($user)->get(route('jams.show', $jam));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            'Intro Pattern',
+            'Verse Pattern',
+            'Chorus Pattern',
+        ]);
     }
 
     public function test_reordering_swaps_position_within_same_section(): void
