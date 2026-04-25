@@ -1,0 +1,159 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Pattern;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PatternTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_unauthenticated_users_are_redirected_from_patterns_index(): void
+    {
+        $this->get('/patterns')->assertRedirect('/login');
+    }
+
+    public function test_authenticated_user_can_create_a_pattern(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/patterns', [
+            'title' => 'Warmup chords',
+            'content' => 'C - Am - F - G',
+            'type' => 'chord progression',
+            'instrument' => 'piano',
+            'key' => 'C',
+            'tempo' => 120,
+            'style' => 'pop',
+            'difficulty' => 'beginner',
+            'notes' => 'Try in 3/4 next.',
+        ]);
+
+        $response->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Warmup chords',
+            'content' => 'C - Am - F - G',
+        ]);
+    }
+
+    public function test_authenticated_user_can_see_their_own_patterns(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create(['title' => 'My Idea']);
+
+        $response = $this->actingAs($user)->get('/patterns');
+
+        $response->assertOk();
+        $response->assertSee($pattern->title);
+    }
+
+    public function test_authenticated_user_cannot_see_another_users_patterns(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherPattern = Pattern::factory()->for($otherUser)->create(['title' => 'Private Idea']);
+
+        $response = $this->actingAs($user)->get('/patterns');
+
+        $response->assertOk();
+        $response->assertDontSee($otherPattern->title);
+    }
+
+    public function test_authenticated_user_cannot_edit_another_users_pattern(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherPattern = Pattern::factory()->for($otherUser)->create();
+
+        $this->actingAs($user)
+            ->get(route('patterns.edit', $otherPattern))
+            ->assertForbidden();
+    }
+
+    public function test_authenticated_user_can_update_their_own_pattern(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Old Title',
+            'content' => 'Old content',
+        ]);
+
+        $response = $this->actingAs($user)->put(route('patterns.update', $pattern), [
+            'title' => 'New Title',
+            'content' => 'Updated pattern content',
+            'type' => 'melody',
+            'instrument' => 'synth',
+            'key' => 'D minor',
+            'tempo' => 95,
+            'style' => 'ambient',
+            'difficulty' => 'intermediate',
+            'notes' => 'Use arpeggiator.',
+        ]);
+
+        $response->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', [
+            'id' => $pattern->id,
+            'title' => 'New Title',
+            'content' => 'Updated pattern content',
+            'instrument' => 'synth',
+        ]);
+    }
+
+    public function test_authenticated_user_can_delete_their_own_pattern(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create();
+
+        $response = $this->actingAs($user)->delete(route('patterns.destroy', $pattern));
+
+        $response->assertRedirect(route('patterns.index'));
+        $this->assertDatabaseMissing('patterns', ['id' => $pattern->id]);
+    }
+
+    public function test_index_filters_patterns_by_type_instrument_and_style(): void
+    {
+        $user = User::factory()->create();
+
+        $matching = Pattern::factory()->for($user)->create([
+            'title' => 'Match',
+            'type' => 'drum groove',
+            'instrument' => 'drums',
+            'style' => 'funk',
+        ]);
+
+        Pattern::factory()->for($user)->create([
+            'title' => 'Wrong Type',
+            'type' => 'melody',
+            'instrument' => 'drums',
+            'style' => 'funk',
+        ]);
+
+        Pattern::factory()->for($user)->create([
+            'title' => 'Wrong Instrument',
+            'type' => 'drum groove',
+            'instrument' => 'bass',
+            'style' => 'funk',
+        ]);
+
+        Pattern::factory()->for($user)->create([
+            'title' => 'Wrong Style',
+            'type' => 'drum groove',
+            'instrument' => 'drums',
+            'style' => 'rock',
+        ]);
+
+        $response = $this->actingAs($user)->get('/patterns?type=drum+groove&instrument=drums&style=funk');
+
+        $response->assertOk();
+        $response->assertSee($matching->title);
+        $response->assertDontSee('Wrong Type');
+        $response->assertDontSee('Wrong Instrument');
+        $response->assertDontSee('Wrong Style');
+    }
+}
