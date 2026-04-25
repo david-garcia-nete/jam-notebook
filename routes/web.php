@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PatternController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/patterns', [PatternController::class, 'index'])->name('patterns.index');
+    Route::get('/patterns/create', [PatternController::class, 'create'])->name('patterns.create');
+    Route::post('/patterns', [PatternController::class, 'store'])->name('patterns.store');
+    Route::get('/patterns/{pattern}/edit', [PatternController::class, 'edit'])->name('patterns.edit');
+    Route::put('/patterns/{pattern}', [PatternController::class, 'update'])->name('patterns.update');
+    Route::delete('/patterns/{pattern}', [PatternController::class, 'destroy'])->name('patterns.destroy');
 });
 
 require __DIR__.'/auth.php';
