@@ -23,6 +23,11 @@ class User extends Authenticatable
         return $this->hasMany(Pattern::class);
     }
 
+    public function jams(): HasMany
+    {
+        return $this->hasMany(Jam::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('patterns.index')" :active="request()->routeIs('patterns.*')">
                         {{ __('Pattern Library') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('jams.index')" :active="request()->routeIs('jams.*')">
+                        {{ __('Jams') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -75,6 +78,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('patterns.index')" :active="request()->routeIs('patterns.*')">
                 {{ __('Pattern Library') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('jams.index')" :active="request()->routeIs('jams.*')">
+                {{ __('Jams') }}
             </x-responsive-nav-link>
         </div>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AiPatternController;
+use App\Http\Controllers\JamController;
 use App\Http\Controllers\PatternController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/patterns/{pattern}/edit', [PatternController::class, 'edit'])->name('patterns.edit');
     Route::put('/patterns/{pattern}', [PatternController::class, 'update'])->name('patterns.update');
     Route::delete('/patterns/{pattern}', [PatternController::class, 'destroy'])->name('patterns.destroy');
+
+    Route::resource('jams', JamController::class);
+    Route::post('/jams/{jam}/patterns', [JamController::class, 'attachPattern'])->name('jams.patterns.attach');
+    Route::delete('/jams/{jam}/patterns/{pattern}', [JamController::class, 'detachPattern'])->name('jams.patterns.detach');
 });
 
 require __DIR__.'/auth.php';
