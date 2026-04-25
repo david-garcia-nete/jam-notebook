@@ -1,6 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Pattern</h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Pattern</h2>
+            <a href="{{ route('patterns.develop.create', $pattern) }}" class="inline-flex items-center px-4 py-2 bg-emerald-100 border border-emerald-200 rounded-md font-semibold text-xs text-emerald-700 uppercase tracking-widest hover:bg-emerald-200">Develop with AI</a>
+        </div>
     </x-slot>
 
     <div class="py-8">
