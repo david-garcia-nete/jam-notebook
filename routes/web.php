@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiPatternController;
 use App\Http\Controllers\PatternController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/patterns', [PatternController::class, 'index'])->name('patterns.index');
     Route::get('/patterns/create', [PatternController::class, 'create'])->name('patterns.create');
     Route::post('/patterns', [PatternController::class, 'store'])->name('patterns.store');
+
+    Route::get('/patterns/generate', [AiPatternController::class, 'create'])->name('patterns.generate.create');
+    Route::post('/patterns/generate', [AiPatternController::class, 'store'])->name('patterns.generate.store');
+    Route::post('/patterns/generate/save', [AiPatternController::class, 'save'])->name('patterns.generate.save');
+
     Route::get('/patterns/{pattern}/edit', [PatternController::class, 'edit'])->name('patterns.edit');
     Route::put('/patterns/{pattern}', [PatternController::class, 'update'])->name('patterns.update');
     Route::delete('/patterns/{pattern}', [PatternController::class, 'destroy'])->name('patterns.destroy');
