@@ -2,27 +2,23 @@
 
 namespace App\Models;
 
-use Database\Factories\PatternFactory;
+use Database\Factories\JamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Pattern extends Model
+class Jam extends Model
 {
-    /** @use HasFactory<PatternFactory> */
+    /** @use HasFactory<JamFactory> */
     use HasFactory;
 
     protected $fillable = [
         'user_id',
         'title',
-        'type',
-        'instrument',
         'key',
         'tempo',
         'style',
-        'difficulty',
-        'content',
         'notes',
     ];
 
@@ -31,8 +27,8 @@ class Pattern extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function jams(): BelongsToMany
+    public function patterns(): BelongsToMany
     {
-        return $this->belongsToMany(Jam::class)->withTimestamps();
+        return $this->belongsToMany(Pattern::class)->withTimestamps();
     }
 }
