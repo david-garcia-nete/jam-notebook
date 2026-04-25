@@ -233,7 +233,7 @@ class AiJamDevelopmentTest extends TestCase
         $this->assertDatabaseCount('jam_pattern', 0);
     }
 
-    public function test_duplicate_attach_does_not_create_duplicate_pivot_rows(): void
+    public function test_ai_suggestions_create_new_patterns_and_attach_without_duplicate_existing_rows(): void
     {
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
@@ -263,12 +263,17 @@ class AiJamDevelopmentTest extends TestCase
             'attach_to_jam' => '1',
         ])->assertRedirect(route('jams.show', $jam));
 
-        $this->assertDatabaseCount('jam_pattern', 1);
+        $this->assertDatabaseCount('jam_pattern', 2);
         $this->assertDatabaseHas('jam_pattern', [
             'jam_id' => $jam->id,
             'pattern_id' => $existing->id,
             'section' => 'Chorus',
             'position' => 1,
+        ]);
+        $this->assertDatabaseHas('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Transition: Verse → Chorus',
+            'content' => 'Lift into chorus',
         ]);
     }
 
