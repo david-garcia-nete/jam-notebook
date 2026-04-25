@@ -2,7 +2,10 @@
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Pattern Library</h2>
-            <a href="{{ route('patterns.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500">New Pattern</a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('patterns.generate.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-100 border border-indigo-200 rounded-md font-semibold text-xs text-indigo-700 uppercase tracking-widest hover:bg-indigo-200">Generate with AI</a>
+                <a href="{{ route('patterns.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500">New Pattern</a>
+            </div>
         </div>
     </x-slot>
 
