@@ -66,7 +66,7 @@ class AiPatternGeneratorTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Funky Pocket Loop');
-        $response->assertSee('Kick on 1 and the &amp; of 2');
+        $response->assertSee('Kick on 1 and the & of 2');
     }
 
     public function test_authenticated_user_can_save_generated_pattern(): void
