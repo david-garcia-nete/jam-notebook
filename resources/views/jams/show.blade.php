@@ -51,7 +51,11 @@
                         </div>
                         <div>
                             <x-input-label for="section" :value="__('Section')" />
-                            <x-text-input id="section" name="section" type="text" class="mt-1 block w-full" :value="old('section')" required maxlength="50" />
+                            <select id="section" name="section" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                @foreach (\App\Models\Jam::SECTIONS as $section)
+                                    <option value="{{ $section }}" @selected(old('section') === $section)>{{ $section }}</option>
+                                @endforeach
+                            </select>
                             <x-input-error class="mt-2" :messages="$errors->get('section')" />
                         </div>
                         <div class="md:col-span-3">
@@ -97,7 +101,14 @@
                                     @csrf
                                     <div>
                                         <x-input-label for="section_{{ $pattern->id }}" :value="__('Section')" />
-                                        <x-text-input id="section_{{ $pattern->id }}" name="section" type="text" class="mt-1 block w-full" :value="$pattern->pivot->section" required maxlength="50" />
+                                        <select id="section_{{ $pattern->id }}" name="section" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            @foreach (\App\Models\Jam::SECTIONS as $section)
+                                                <option value="{{ $section }}" @selected($pattern->pivot->section === $section)>{{ $section }}</option>
+                                            @endforeach
+                                            @if ($pattern->pivot->section && ! in_array($pattern->pivot->section, \App\Models\Jam::SECTIONS, true))
+                                                <option value="{{ $pattern->pivot->section }}" selected>{{ $pattern->pivot->section }}</option>
+                                            @endif
+                                        </select>
                                     </div>
                                     <div>
                                         <x-input-label for="notes_{{ $pattern->id }}" :value="__('Notes')" />
