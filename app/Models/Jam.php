@@ -29,6 +29,8 @@ class Jam extends Model
 
     public function patterns(): BelongsToMany
     {
-        return $this->belongsToMany(Pattern::class)->withTimestamps();
+        return $this->belongsToMany(Pattern::class)
+            ->withPivot(['section', 'position', 'notes'])
+            ->withTimestamps();
     }
 }

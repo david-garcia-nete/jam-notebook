@@ -100,7 +100,7 @@ class JamTest extends TestCase
         $this->assertDatabaseMissing('jams', ['id' => $jam->id]);
     }
 
-    public function test_user_can_attach_pattern_to_jam(): void
+    public function test_user_can_attach_pattern_to_jam_with_section(): void
     {
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
@@ -108,19 +108,55 @@ class JamTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
             'pattern_id' => $pattern->id,
+            'section' => 'Intro',
         ]);
 
         $response->assertRedirect(route('jams.show', $jam));
         $this->assertDatabaseHas('jam_pattern', [
             'jam_id' => $jam->id,
             'pattern_id' => $pattern->id,
+            'section' => 'Intro',
+            'position' => 1,
         ]);
 
         $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
             'pattern_id' => $pattern->id,
+            'section' => 'Intro',
         ])->assertRedirect(route('jams.show', $jam));
 
         $this->assertDatabaseCount('jam_pattern', 1);
+    }
+
+    public function test_pattern_position_auto_increments_within_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $patternA = Pattern::factory()->for($user)->create();
+        $patternB = Pattern::factory()->for($user)->create();
+
+        $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
+            'pattern_id' => $patternA->id,
+            'section' => 'Verse',
+        ]);
+
+        $this->actingAs($user)->post(route('jams.patterns.attach', $jam), [
+            'pattern_id' => $patternB->id,
+            'section' => 'Verse',
+        ]);
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $patternA->id,
+            'section' => 'Verse',
+            'position' => 1,
+        ]);
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $patternB->id,
+            'section' => 'Verse',
+            'position' => 2,
+        ]);
     }
 
     public function test_user_can_detach_pattern_from_jam(): void
@@ -128,7 +164,7 @@ class JamTest extends TestCase
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
         $pattern = Pattern::factory()->for($user)->create();
-        $jam->patterns()->attach($pattern);
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
 
         $response = $this->actingAs($user)->delete(route('jams.patterns.detach', [$jam, $pattern]));
 
@@ -139,21 +175,86 @@ class JamTest extends TestCase
         ]);
     }
 
-    public function test_attached_patterns_appear_on_jam_show_page(): void
+    public function test_grouped_patterns_appear_on_jam_show_page(): void
     {
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
-        $pattern = Pattern::factory()->for($user)->create([
-            'title' => 'Chord Loop',
+        $introPattern = Pattern::factory()->for($user)->create([
+            'title' => 'Intro Drone',
+            'content' => 'A A A A',
+        ]);
+        $chorusPattern = Pattern::factory()->for($user)->create([
+            'title' => 'Chorus Hook',
             'content' => 'Dm - Bb - F - C',
         ]);
-        $jam->patterns()->attach($pattern);
+
+        $jam->patterns()->attach($introPattern, ['section' => 'Intro', 'position' => 1]);
+        $jam->patterns()->attach($chorusPattern, ['section' => 'Chorus', 'position' => 1]);
 
         $response = $this->actingAs($user)->get(route('jams.show', $jam));
 
         $response->assertOk();
-        $response->assertSee('Chord Loop');
-        $response->assertSee('Dm - Bb - F - C');
+        $response->assertSee('Intro');
+        $response->assertSee('Chorus');
+        $response->assertSee('Intro Drone');
+        $response->assertSee('Chorus Hook');
+    }
+
+    public function test_reordering_swaps_position_within_same_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $patternA = Pattern::factory()->for($user)->create(['title' => 'First']);
+        $patternB = Pattern::factory()->for($user)->create(['title' => 'Second']);
+
+        $jam->patterns()->attach($patternA, ['section' => 'Verse', 'position' => 1]);
+        $jam->patterns()->attach($patternB, ['section' => 'Verse', 'position' => 2]);
+
+        $this->actingAs($user)
+            ->post(route('jams.patterns.move-down', [$jam, $patternA]))
+            ->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $patternA->id,
+            'section' => 'Verse',
+            'position' => 2,
+        ]);
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $patternB->id,
+            'section' => 'Verse',
+            'position' => 1,
+        ]);
+    }
+
+    public function test_user_cannot_modify_another_users_jam_placement(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+
+        $jam = Jam::factory()->for($owner)->create();
+        $pattern = Pattern::factory()->for($owner)->create();
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($intruder)
+            ->post(route('jams.patterns.update', [$jam, $pattern]), [
+                'section' => 'Chorus',
+                'notes' => 'Unauthorized',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($intruder)
+            ->post(route('jams.patterns.move-up', [$jam, $pattern]))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Verse',
+            'position' => 1,
+        ]);
     }
 
     public function test_pattern_must_belong_to_user_when_attaching(): void
@@ -165,7 +266,7 @@ class JamTest extends TestCase
         $otherPattern = Pattern::factory()->for($otherUser)->create();
 
         $this->actingAs($user)
-            ->post(route('jams.patterns.attach', $jam), ['pattern_id' => $otherPattern->id])
+            ->post(route('jams.patterns.attach', $jam), ['pattern_id' => $otherPattern->id, 'section' => 'Intro'])
             ->assertForbidden();
 
         $this->assertDatabaseMissing('jam_pattern', [

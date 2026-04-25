@@ -7,6 +7,7 @@ use App\Models\Pattern;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class JamController extends Controller
 {
@@ -41,7 +42,11 @@ class JamController extends Controller
     {
         $this->ensureOwner($jam);
 
-        $jam->load(['patterns' => fn ($query) => $query->where('user_id', auth()->id())->latest()]);
+        $jam->load(['patterns' => fn ($query) => $query
+            ->where('user_id', auth()->id())
+            ->orderBy('jam_pattern.section')
+            ->orderBy('jam_pattern.position')
+            ->orderBy('patterns.created_at', 'desc')]);
 
         $availablePatterns = Pattern::query()
             ->where('user_id', auth()->id())
@@ -88,14 +93,74 @@ class JamController extends Controller
 
         $validated = $request->validate([
             'pattern_id' => ['required', 'integer', 'exists:patterns,id'],
+            'section' => ['required', 'string', 'max:50'],
         ]);
 
         $pattern = Pattern::query()->findOrFail($validated['pattern_id']);
         abort_if($pattern->user_id !== auth()->id(), 403);
 
-        $jam->patterns()->syncWithoutDetaching([$pattern->id]);
+        $alreadyAttached = $jam->patterns()->where('patterns.id', $pattern->id)->exists();
+
+        if (! $alreadyAttached) {
+            $nextPosition = (int) DB::table('jam_pattern')
+                ->where('jam_id', $jam->id)
+                ->where('section', $validated['section'])
+                ->max('position') + 1;
+
+            $jam->patterns()->attach($pattern->id, [
+                'section' => $validated['section'],
+                'position' => $nextPosition,
+            ]);
+        }
 
         return redirect()->route('jams.show', $jam)->with('status', 'Pattern added to jam.');
+    }
+
+    public function updatePatternPlacement(Request $request, Jam $jam, Pattern $pattern): RedirectResponse
+    {
+        $this->ensureOwner($jam);
+        abort_if($pattern->user_id !== auth()->id(), 403);
+
+        $validated = $request->validate([
+            'section' => ['required', 'string', 'max:50'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $pivot = DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $pattern->id)
+            ->first();
+
+        abort_if($pivot === null, 404);
+
+        $sectionChanged = $pivot->section !== $validated['section'];
+
+        $position = (int) $pivot->position;
+
+        if ($sectionChanged) {
+            $position = (int) DB::table('jam_pattern')
+                ->where('jam_id', $jam->id)
+                ->where('section', $validated['section'])
+                ->max('position') + 1;
+        }
+
+        $jam->patterns()->updateExistingPivot($pattern->id, [
+            'section' => $validated['section'],
+            'position' => $position,
+            'notes' => $validated['notes'],
+        ]);
+
+        return redirect()->route('jams.show', $jam)->with('status', 'Pattern placement updated.');
+    }
+
+    public function movePatternUp(Jam $jam, Pattern $pattern): RedirectResponse
+    {
+        return $this->movePattern($jam, $pattern, 'up');
+    }
+
+    public function movePatternDown(Jam $jam, Pattern $pattern): RedirectResponse
+    {
+        return $this->movePattern($jam, $pattern, 'down');
     }
 
     public function detachPattern(Jam $jam, Pattern $pattern): RedirectResponse
@@ -106,6 +171,49 @@ class JamController extends Controller
         $jam->patterns()->detach($pattern->id);
 
         return redirect()->route('jams.show', $jam)->with('status', 'Pattern removed from jam.');
+    }
+
+    private function movePattern(Jam $jam, Pattern $pattern, string $direction): RedirectResponse
+    {
+        $this->ensureOwner($jam);
+        abort_if($pattern->user_id !== auth()->id(), 403);
+
+        $current = DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $pattern->id)
+            ->first();
+
+        abort_if($current === null, 404);
+
+        $neighborQuery = DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('section', $current->section);
+
+        if ($direction === 'up') {
+            $neighbor = $neighborQuery
+                ->where('position', '<', $current->position)
+                ->orderByDesc('position')
+                ->first();
+        } else {
+            $neighbor = $neighborQuery
+                ->where('position', '>', $current->position)
+                ->orderBy('position')
+                ->first();
+        }
+
+        if ($neighbor !== null) {
+            DB::transaction(function () use ($current, $neighbor): void {
+                DB::table('jam_pattern')
+                    ->where('id', $current->id)
+                    ->update(['position' => $neighbor->position]);
+
+                DB::table('jam_pattern')
+                    ->where('id', $neighbor->id)
+                    ->update(['position' => $current->position]);
+            });
+        }
+
+        return redirect()->route('jams.show', $jam);
     }
 
     private function ensureOwner(Jam $jam): void

@@ -38,6 +38,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('jams', JamController::class);
     Route::post('/jams/{jam}/patterns', [JamController::class, 'attachPattern'])->name('jams.patterns.attach');
+    Route::post('/jams/{jam}/patterns/{pattern}/update', [JamController::class, 'updatePatternPlacement'])->name('jams.patterns.update');
+    Route::post('/jams/{jam}/patterns/{pattern}/move-up', [JamController::class, 'movePatternUp'])->name('jams.patterns.move-up');
+    Route::post('/jams/{jam}/patterns/{pattern}/move-down', [JamController::class, 'movePatternDown'])->name('jams.patterns.move-down');
     Route::delete('/jams/{jam}/patterns/{pattern}', [JamController::class, 'detachPattern'])->name('jams.patterns.detach');
 });
 
