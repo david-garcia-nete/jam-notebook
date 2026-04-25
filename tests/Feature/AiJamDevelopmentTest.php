@@ -178,4 +178,130 @@ class AiJamDevelopmentTest extends TestCase
         $this->assertSame('Original Verse', $original->title);
         $this->assertSame('Original verse content', $original->content);
     }
+
+    public function test_unknown_suggestion_type_is_ignored_on_save(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'unexpected_type',
+                    'title' => 'Should Be Ignored',
+                    'content' => 'No-op',
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('patterns', 0);
+        $this->assertDatabaseCount('jam_pattern', 0);
+    }
+
+    public function test_empty_transition_is_not_saved(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'transition',
+                    'description' => '   ',
+                    'from_section' => 'Verse',
+                    'to_section' => 'Chorus',
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseMissing('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Transition: Verse → Chorus',
+        ]);
+        $this->assertDatabaseCount('jam_pattern', 0);
+    }
+
+    public function test_duplicate_attach_does_not_create_duplicate_pivot_rows(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $existing = Pattern::factory()->for($user)->create([
+            'title' => 'Transition: Verse → Chorus',
+            'type' => 'arrangement idea',
+            'content' => 'Lift into chorus',
+            'notes' => 'From Verse to Chorus',
+        ]);
+        $jam->patterns()->attach($existing, ['section' => 'Chorus', 'position' => 1]);
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'transition',
+                    'description' => 'Lift into chorus',
+                    'from_section' => 'Verse',
+                    'to_section' => 'Chorus',
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('jam_pattern', 1);
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $existing->id,
+            'section' => 'Chorus',
+            'position' => 1,
+        ]);
+    }
+
+    public function test_relaxed_schema_accepts_minimal_suggestion_with_only_type(): void
+    {
+        config()->set('services.openai.key', 'test-key');
+
+        Http::fake([
+            'https://api.openai.com/v1/responses' => Http::response([
+                'output_text' => json_encode([
+                    'suggestions' => [
+                        ['type' => 'new_section'],
+                    ],
+                ]),
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $response = $this->actingAs($user)->post(route('jams.develop.store', $jam), [
+            'instruction' => 'Only minimal suggestions',
+        ]);
+
+        $response->assertOk()->assertSee('AI Jam Suggestions');
+
+        Http::assertSent(function ($request): bool {
+            $required = data_get(
+                $request->data(),
+                'text.format.schema.properties.suggestions.items.required'
+            );
+
+            return $required === ['type'];
+        });
+    }
 }

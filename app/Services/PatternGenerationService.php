@@ -10,6 +10,12 @@ use RuntimeException;
 
 class PatternGenerationService
 {
+    private const DEVELOP_JAM_ALLOWED_SUGGESTION_TYPES = [
+        'new_section',
+        'new_pattern',
+        'transition',
+    ];
+
     /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
@@ -198,7 +204,7 @@ class PatternGenerationService
                                             'from_section' => ['type' => ['string', 'null']],
                                             'to_section' => ['type' => ['string', 'null']],
                                         ],
-                                        'required' => ['type', 'section', 'title', 'instrument', 'content', 'notes', 'description', 'from_section', 'to_section'],
+                                        'required' => ['type'],
                                         'additionalProperties' => false,
                                     ],
                                 ],
@@ -394,6 +400,10 @@ class PatternGenerationService
             $type = $this->normalizeString($suggestion['type'] ?? null, false);
 
             if ($type === null) {
+                continue;
+            }
+
+            if (! in_array($type, self::DEVELOP_JAM_ALLOWED_SUGGESTION_TYPES, true)) {
                 continue;
             }
 

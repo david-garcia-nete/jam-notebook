@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class AiJamDevelopmentController extends Controller
 {
+    private const ALLOWED_SUGGESTION_TYPES = [
+        'new_section',
+        'new_pattern',
+        'transition',
+    ];
+
     public function create(Jam $jam): View
     {
         $this->ensureOwner($jam);
@@ -84,6 +90,10 @@ class AiJamDevelopmentController extends Controller
 
             $type = trim((string) ($suggestion['type'] ?? ''));
 
+            if (! in_array($type, self::ALLOWED_SUGGESTION_TYPES, true)) {
+                continue;
+            }
+
             if ($type === 'new_section') {
                 continue;
             }
@@ -113,7 +123,11 @@ class AiJamDevelopmentController extends Controller
             if ($type === 'transition') {
                 $from = Jam::normalizeSection((string) ($suggestion['from_section'] ?? 'Verse'));
                 $to = Jam::normalizeSection((string) ($suggestion['to_section'] ?? 'Chorus'));
-                $description = trim((string) ($suggestion['description'] ?? 'Transition idea'));
+                $description = trim((string) ($suggestion['description'] ?? ''));
+
+                if ($description === '') {
+                    continue;
+                }
 
                 $pattern = $request->user()->patterns()->create([
                     'title' => 'Transition: '.$from.' → '.$to,
@@ -133,6 +147,15 @@ class AiJamDevelopmentController extends Controller
 
     private function attachPatternToSection(Jam $jam, int $patternId, string $section): void
     {
+        $alreadyAttached = DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $patternId)
+            ->exists();
+
+        if ($alreadyAttached) {
+            return;
+        }
+
         $nextPosition = (int) DB::table('jam_pattern')
             ->where('jam_id', $jam->id)
             ->where('section', $section)
