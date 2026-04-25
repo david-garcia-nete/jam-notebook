@@ -72,6 +72,7 @@
                                 </p>
                             </div>
                             <div class="flex items-center gap-3 text-sm">
+                                <a href="{{ route('patterns.develop.create', $pattern) }}" class="text-emerald-600 hover:text-emerald-800">Develop with AI</a>
                                 <a href="{{ route('patterns.edit', $pattern) }}" class="text-indigo-600 hover:text-indigo-800">Edit</a>
                                 <form method="POST" action="{{ route('patterns.destroy', $pattern) }}" onsubmit="return confirm('Delete this pattern?');">
                                     @csrf

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Pattern;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -74,6 +75,70 @@ class PatternGenerationService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function develop(Pattern $pattern, ?string $instruction = null): array
+    {
+        $apiKey = config('services.openai.key');
+
+        if (! is_string($apiKey) || trim($apiKey) === '') {
+            throw new RuntimeException('OpenAI API key is not configured. Set OPENAI_API_KEY in your environment.');
+        }
+
+        $response = Http::withToken($apiKey)
+            ->acceptJson()
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => config('services.openai.model', 'gpt-4o-mini'),
+                'input' => [
+                    [
+                        'role' => 'system',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => 'You are a practical musician and jam partner inside Jam Notebook. Develop existing ideas into playable next-step patterns. Avoid audio, notation, MIDI, tabs, DAW export, or production-heavy instructions. Return only structured JSON matching the requested fields.',
+                            ],
+                        ],
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => $this->buildDevelopPrompt($pattern, $instruction),
+                            ],
+                        ],
+                    ],
+                ],
+                'text' => [
+                    'format' => [
+                        'type' => 'json_schema',
+                        'name' => 'pattern',
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string'],
+                                'type' => ['type' => ['string', 'null']],
+                                'instrument' => ['type' => ['string', 'null']],
+                                'key' => ['type' => ['string', 'null']],
+                                'tempo' => ['type' => ['integer', 'null']],
+                                'style' => ['type' => ['string', 'null']],
+                                'difficulty' => ['type' => ['string', 'null']],
+                                'content' => ['type' => 'string'],
+                                'notes' => ['type' => ['string', 'null']],
+                            ],
+                            'required' => ['title', 'type', 'instrument', 'key', 'tempo', 'style', 'difficulty', 'content', 'notes'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $response->throw();
+
+        return $this->normalizeGeneratedPattern($this->extractJsonPayload($response->json()));
+    }
+
+    /**
      * @param  array<string, mixed>  $input
      */
     private function buildPrompt(array $input): string
@@ -88,6 +153,38 @@ class PatternGenerationService
             '- style: '.$this->valueOrAuto($input['style'] ?? null),
             '- difficulty: '.$this->valueOrAuto($input['difficulty'] ?? null),
             'Make it practical for practice/jamming. Include a concrete musical idea and clear usage notes.',
+        ];
+
+        return implode("\n", $parts);
+    }
+
+
+    private function buildDevelopPrompt(Pattern $pattern, ?string $instruction): string
+    {
+        $parts = [
+            'Develop this existing musical idea into a useful next-step pattern.',
+            'Keep it playable and practical.',
+            'Provide a variation, extension, or complementary idea.',
+            'Do not replace creativity; help the musician practice and expand the idea.',
+            '',
+            'Original pattern:',
+            '- title: '.$pattern->title,
+            '- type: '.$this->valueOrAuto($pattern->type),
+            '- instrument: '.$this->valueOrAuto($pattern->instrument),
+            '- key: '.$this->valueOrAuto($pattern->key),
+            '- tempo: '.$this->valueOrAuto($pattern->tempo),
+            '- style: '.$this->valueOrAuto($pattern->style),
+            '- difficulty: '.$this->valueOrAuto($pattern->difficulty),
+            '- content: '.$pattern->content,
+            '- notes: '.$this->valueOrAuto($pattern->notes),
+            '',
+            'User instruction: '.($instruction !== null && trim($instruction) !== '' ? trim($instruction) : 'none'),
+            '',
+            'For content and notes, include practical sections where appropriate:',
+            '- What changed',
+            '- Variation or extension',
+            '- How to practice it',
+            '- Optional companion idea',
         ];
 
         return implode("\n", $parts);

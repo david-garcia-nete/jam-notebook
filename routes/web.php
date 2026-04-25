@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AiPatternController;
+use App\Http\Controllers\AiPatternDevelopmentController;
 use App\Http\Controllers\JamController;
 use App\Http\Controllers\PatternController;
 use App\Http\Controllers\ProfileController;
@@ -26,6 +27,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/patterns/generate', [AiPatternController::class, 'create'])->name('patterns.generate.create');
     Route::post('/patterns/generate', [AiPatternController::class, 'store'])->name('patterns.generate.store');
     Route::post('/patterns/generate/save', [AiPatternController::class, 'save'])->name('patterns.generate.save');
+
+    Route::get('/patterns/{pattern}/develop', [AiPatternDevelopmentController::class, 'create'])->name('patterns.develop.create');
+    Route::post('/patterns/{pattern}/develop', [AiPatternDevelopmentController::class, 'store'])->name('patterns.develop.store');
+    Route::post('/patterns/{pattern}/develop/save', [AiPatternDevelopmentController::class, 'save'])->name('patterns.develop.save');
 
     Route::get('/patterns/{pattern}/edit', [PatternController::class, 'edit'])->name('patterns.edit');
     Route::put('/patterns/{pattern}', [PatternController::class, 'update'])->name('patterns.update');
