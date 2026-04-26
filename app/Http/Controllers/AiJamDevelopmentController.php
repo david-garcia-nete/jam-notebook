@@ -110,6 +110,11 @@ class AiJamDevelopmentController extends Controller
                     'notes' => 'AI suggested adding a '.$section.' section.',
                 ]);
 
+                if ($pattern->content === '') {
+                    $pattern->delete();
+                    continue;
+                }
+
                 if ($attachToJam) {
                     $this->attachPatternToSection($jam, $pattern->id, $section);
                 }
