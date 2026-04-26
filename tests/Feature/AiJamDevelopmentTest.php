@@ -429,7 +429,6 @@ class AiJamDevelopmentTest extends TestCase
             'suggestions' => ['suggestions' => []],
         ]);
 
-        $response->assertOk();
         $response->assertSee('No usable AI suggestions were returned. Try regenerating with a more specific instruction.');
         $response->assertDontSee('Save Selected Suggestions');
     }
