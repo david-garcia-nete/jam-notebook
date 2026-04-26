@@ -226,39 +226,17 @@ class AiJamDevelopmentController extends Controller
     {
         $normalized = [
             'title' => trim((string) ($attributes['title'] ?? '')),
-            'type' => $this->nullableString($attributes['type'] ?? null),
-            'instrument' => $this->nullableString($attributes['instrument'] ?? null),
-            'key' => $this->nullableString($attributes['key'] ?? null),
-            'tempo' => isset($attributes['tempo']) ? (int) $attributes['tempo'] : null,
-            'style' => $this->nullableString($attributes['style'] ?? null),
-            'difficulty' => $this->nullableString($attributes['difficulty'] ?? null),
             'content' => trim((string) ($attributes['content'] ?? '')),
-            'notes' => $this->nullableString($attributes['notes'] ?? null),
         ];
 
         if ($normalized['title'] === '' || $normalized['content'] === '') {
             return null;
         }
 
-        $query = $request->user()->patterns();
-
-        foreach (['title', 'type', 'instrument', 'key', 'style', 'difficulty', 'content', 'notes'] as $field) {
-            if ($normalized[$field] === null) {
-                $query->whereNull($field);
-
-                continue;
-            }
-
-            $query->whereRaw('LOWER(TRIM('.$field.')) = ?', [strtolower($normalized[$field])]);
-        }
-
-        if ($normalized['tempo'] === null) {
-            $query->whereNull('tempo');
-        } else {
-            $query->where('tempo', $normalized['tempo']);
-        }
-
-        return $query->first();
+        return $request->user()->patterns()
+            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($normalized['title'])])
+            ->whereRaw('LOWER(TRIM(content)) = ?', [strtolower($normalized['content'])])
+            ->first();
     }
 
     private function ensureOwner(Jam $jam): void
