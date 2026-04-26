@@ -61,6 +61,22 @@ class JamController extends Controller
         ]);
     }
 
+    public function sheet(Jam $jam): View
+    {
+        $this->ensureOwner($jam);
+
+        $jam->load(['patterns' => fn ($query) => $query
+            ->where('user_id', auth()->id())
+            ->orderByRaw(Jam::sectionOrderSql(), Jam::SECTIONS)
+            ->orderBy('jam_pattern.section')
+            ->orderBy('jam_pattern.position')
+            ->orderBy('patterns.created_at', 'desc')]);
+
+        return view('jams.sheet', [
+            'jam' => $jam,
+        ]);
+    }
+
     public function edit(Jam $jam): View
     {
         $this->ensureOwner($jam);
