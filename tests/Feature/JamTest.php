@@ -265,10 +265,14 @@ class JamTest extends TestCase
         $jam = Jam::factory()->for($user)->create();
 
         $chorusPattern = Pattern::factory()->for($user)->create(['title' => 'Chorus Pattern']);
+        $interludePattern = Pattern::factory()->for($user)->create(['title' => 'Interlude Pattern']);
+        $bridgePattern = Pattern::factory()->for($user)->create(['title' => 'Bridge Pattern']);
         $introPattern = Pattern::factory()->for($user)->create(['title' => 'Intro Pattern']);
         $versePattern = Pattern::factory()->for($user)->create(['title' => 'Verse Pattern']);
 
         $jam->patterns()->attach($chorusPattern, ['section' => 'Chorus', 'position' => 1]);
+        $jam->patterns()->attach($interludePattern, ['section' => 'Interlude', 'position' => 1]);
+        $jam->patterns()->attach($bridgePattern, ['section' => 'Bridge', 'position' => 1]);
         $jam->patterns()->attach($introPattern, ['section' => 'Intro', 'position' => 1]);
         $jam->patterns()->attach($versePattern, ['section' => 'Verse', 'position' => 1]);
 
@@ -279,6 +283,29 @@ class JamTest extends TestCase
             'Intro Pattern',
             'Verse Pattern',
             'Chorus Pattern',
+            'Interlude Pattern',
+            'Bridge Pattern',
+        ]);
+    }
+
+    public function test_jam_show_page_displays_section_dropdown_options_in_order(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        Pattern::factory()->for($user)->create();
+
+        $response = $this->actingAs($user)->get(route('jams.show', $jam));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            'Intro',
+            'Verse',
+            'Pre-Chorus',
+            'Chorus',
+            'Interlude',
+            'Bridge',
+            'Solo',
+            'Outro',
         ]);
     }
 
