@@ -168,7 +168,7 @@ class PatternGenerationService
                         'content' => [
                             [
                                 'type' => 'input_text',
-                                'text' => 'You are a practical songwriting assistant inside Jam Notebook. Help users develop complete song arrangements from jam structures. Return only strict JSON matching the schema.',
+                                'text' => 'You are a practical songwriting assistant inside Jam Notebook. Help users develop complete song arrangements from jam structures. Return only strict JSON matching the schema. Always return at least 3 useful suggestions: at least one new_pattern and at least one transition. Optionally include one new_section if the jam is missing an important part. Do not return an empty suggestions array.',
                             ],
                         ],
                     ],
@@ -191,6 +191,7 @@ class PatternGenerationService
                             'properties' => [
                                 'suggestions' => [
                                     'type' => 'array',
+                                    'minItems' => 1,
                                     'items' => [
                                         'type' => 'object',
                                         'properties' => [
@@ -307,6 +308,7 @@ class PatternGenerationService
                 'sections' => $sections,
             ],
             'instruction' => $instruction !== null && trim($instruction) !== '' ? trim($instruction) : null,
+            'requirements' => 'Return at least 3 suggestions. Prefer concrete new_pattern ideas with playable text content. If the jam already has sections, suggest ways to strengthen or connect them.',
         ];
 
         return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
@@ -428,6 +430,10 @@ class PatternGenerationService
                 'from_section' => $this->normalizeString($suggestion['from_section'] ?? null),
                 'to_section' => $this->normalizeString($suggestion['to_section'] ?? null),
             ];
+        }
+
+        if ($suggestions === []) {
+            throw new RuntimeException('OpenAI returned no usable jam development suggestions.');
         }
 
         return ['suggestions' => $suggestions];
