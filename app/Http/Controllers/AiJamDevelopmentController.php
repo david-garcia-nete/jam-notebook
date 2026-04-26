@@ -95,6 +95,30 @@ class AiJamDevelopmentController extends Controller
             }
 
             if ($type === 'new_section') {
+                $section = Jam::normalizeSection((string) ($suggestion['section'] ?? 'Bridge'));
+                $description = trim((string) ($suggestion['description'] ?? ''));
+
+                if ($description === '') {
+                    $description = 'Create a new '.$section.' section idea for this jam.';
+                }
+
+                $pattern = $request->user()->patterns()->create([
+                    'title' => $section.' Section Idea',
+                    'type' => 'arrangement idea',
+                    'instrument' => $this->nullableString($suggestion['instrument'] ?? null),
+                    'content' => $description,
+                    'notes' => 'AI suggested adding a '.$section.' section.',
+                ]);
+
+                if ($pattern->content === '') {
+                    $pattern->delete();
+                    continue;
+                }
+
+                if ($attachToJam) {
+                    $this->attachPatternToSection($jam, $pattern->id, $section);
+                }
+
                 continue;
             }
 

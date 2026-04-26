@@ -168,7 +168,7 @@ class PatternGenerationService
                         'content' => [
                             [
                                 'type' => 'input_text',
-                                'text' => 'You are a practical songwriting assistant inside Jam Notebook. Help users develop complete song arrangements from jam structures. Return only strict JSON matching the schema. Always return at least 3 useful suggestions: at least one new_pattern and at least one transition. Optionally include one new_section if the jam is missing an important part. Do not return an empty suggestions array.',
+                                'text' => 'You are a practical songwriting assistant inside Jam Notebook. Help users develop complete song arrangements from jam structures. Return only strict JSON matching the schema. Always return at least 3 useful suggestions: at least one new_pattern and at least one transition. Optionally include one new_section if the jam is missing an important part. For new_section suggestions, include a concrete playable section idea in description. The app will save it as a Pattern attached to that section, so do not merely say "add a bridge"; describe what the musician should play or try. Do not return an empty suggestions array.',
                             ],
                         ],
                     ],
@@ -308,7 +308,7 @@ class PatternGenerationService
                 'sections' => $sections,
             ],
             'instruction' => $instruction !== null && trim($instruction) !== '' ? trim($instruction) : null,
-            'requirements' => 'Return at least 3 suggestions. Prefer concrete new_pattern ideas with playable text content. If the jam already has sections, suggest ways to strengthen or connect them.',
+            'requirements' => 'Return at least 3 suggestions. Prefer concrete new_pattern ideas with playable text content. For new_section suggestions, provide concrete, playable description text because the app will save it as a section idea Pattern attached to that section. If the jam already has sections, suggest ways to strengthen or connect them.',
         ];
 
         return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';

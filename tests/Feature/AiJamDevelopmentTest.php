@@ -234,6 +234,121 @@ class AiJamDevelopmentTest extends TestCase
         $this->assertDatabaseCount('jam_pattern', 0);
     }
 
+    public function test_saving_selected_new_section_creates_pattern_and_attaches_to_suggested_section(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'new_section',
+                    'section' => 'Bridge',
+                    'title' => null,
+                    'instrument' => null,
+                    'content' => null,
+                    'notes' => null,
+                    'description' => 'Try a quieter half-time bridge with sustained chords.',
+                    'from_section' => null,
+                    'to_section' => null,
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $pattern = Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Bridge Section Idea')
+            ->first();
+
+        $this->assertNotNull($pattern);
+        $this->assertSame('arrangement idea', $pattern->type);
+        $this->assertSame('Try a quieter half-time bridge with sustained chords.', $pattern->content);
+
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Bridge',
+        ]);
+    }
+
+    public function test_empty_new_section_description_uses_fallback_content_and_attaches_pattern(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'new_section',
+                    'section' => 'Bridge',
+                    'title' => null,
+                    'instrument' => null,
+                    'content' => null,
+                    'notes' => null,
+                    'description' => '   ',
+                    'from_section' => null,
+                    'to_section' => null,
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $pattern = Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Bridge Section Idea')
+            ->first();
+
+        $this->assertNotNull($pattern);
+        $this->assertNotSame('', trim((string) $pattern->content));
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Bridge',
+        ]);
+        $this->assertDatabaseMissing('patterns', [
+            'id' => $pattern->id,
+            'content' => '',
+        ]);
+    }
+
+    public function test_preview_checks_section_ideas_by_default(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $response = $this->actingAs($user)->view('jams.develop-preview', [
+            'jam' => $jam,
+            'instruction' => 'anything',
+            'suggestions' => ['suggestions' => [[
+                'type' => 'new_section',
+                'section' => 'Bridge',
+                'title' => null,
+                'instrument' => null,
+                'content' => null,
+                'notes' => null,
+                'description' => 'Try a quieter half-time bridge with sustained chords.',
+                'from_section' => null,
+                'to_section' => null,
+            ]]],
+        ]);
+
+        $response->assertSee('Section Ideas');
+        $response->assertSee('Bridge Section Idea');
+        $response->assertSee('Will create a Pattern in Bridge.');
+        $response->assertSee('name="selected[]" value="0" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked', false);
+    }
+
     public function test_ai_suggestions_create_new_patterns_and_attach_without_duplicate_existing_rows(): void
     {
         $user = User::factory()->create();
