@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AiPatternController;
+use App\Http\Controllers\AiJamDevelopmentController;
 use App\Http\Controllers\AiPatternDevelopmentController;
 use App\Http\Controllers\JamController;
 use App\Http\Controllers\PatternController;
@@ -42,6 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/jams/{jam}/patterns/{pattern}/move-up', [JamController::class, 'movePatternUp'])->name('jams.patterns.move-up');
     Route::post('/jams/{jam}/patterns/{pattern}/move-down', [JamController::class, 'movePatternDown'])->name('jams.patterns.move-down');
     Route::delete('/jams/{jam}/patterns/{pattern}', [JamController::class, 'detachPattern'])->name('jams.patterns.detach');
+    Route::get('/jams/{jam}/develop', [AiJamDevelopmentController::class, 'create'])->name('jams.develop.create');
+    Route::post('/jams/{jam}/develop', [AiJamDevelopmentController::class, 'store'])->name('jams.develop.store');
+    Route::post('/jams/{jam}/develop/save', [AiJamDevelopmentController::class, 'save'])->name('jams.develop.save');
 });
 
 require __DIR__.'/auth.php';

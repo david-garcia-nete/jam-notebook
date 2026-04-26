@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Jam;
 use App\Models\Pattern;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -9,6 +10,12 @@ use RuntimeException;
 
 class PatternGenerationService
 {
+    private const DEVELOP_JAM_ALLOWED_SUGGESTION_TYPES = [
+        'new_section',
+        'new_pattern',
+        'transition',
+    ];
+
     /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
@@ -138,6 +145,93 @@ class PatternGenerationService
         return $this->normalizeGeneratedPattern($this->extractJsonPayload($response->json()));
     }
 
+
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function developJam(Jam $jam, ?string $instruction = null): array
+    {
+        $apiKey = config('services.openai.key');
+
+        if (! is_string($apiKey) || trim($apiKey) === '') {
+            throw new RuntimeException('OpenAI API key is not configured. Set OPENAI_API_KEY in your environment.');
+        }
+
+        $response = Http::withToken($apiKey)
+            ->acceptJson()
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => config('services.openai.model', 'gpt-4o-mini'),
+                'input' => [
+                    [
+                        'role' => 'system',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => 'You are a practical songwriting assistant inside Jam Notebook. Help users develop complete song arrangements from jam structures. Return only strict JSON matching the schema. Always return at least 3 useful suggestions: at least one new_pattern and at least one transition. Optionally include one new_section if the jam is missing an important part. Do not return an empty suggestions array.',
+                            ],
+                        ],
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => $this->buildDevelopJamPrompt($jam, $instruction),
+                            ],
+                        ],
+                    ],
+                ],
+                'text' => [
+                    'format' => [
+                        'type' => 'json_schema',
+                        'name' => 'jam_development',
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'suggestions' => [
+                                    'type' => 'array',
+                                    'minItems' => 1,
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'type' => ['type' => 'string'],
+                                            'section' => ['type' => ['string', 'null']],
+                                            'title' => ['type' => ['string', 'null']],
+                                            'instrument' => ['type' => ['string', 'null']],
+                                            'content' => ['type' => ['string', 'null']],
+                                            'notes' => ['type' => ['string', 'null']],
+                                            'description' => ['type' => ['string', 'null']],
+                                            'from_section' => ['type' => ['string', 'null']],
+                                            'to_section' => ['type' => ['string', 'null']],
+                                        ],
+                                        'required' => [
+                                            'type',
+                                            'section',
+                                            'title',
+                                            'instrument',
+                                            'content',
+                                            'notes',
+                                            'description',
+                                            'from_section',
+                                            'to_section',
+                                        ],
+                                        'additionalProperties' => false,
+                                    ],
+                                ],
+                            ],
+                            'required' => ['suggestions'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $response->throw();
+
+        return $this->normalizeDevelopJamSuggestions($this->extractJsonPayload($response->json()));
+    }
+
     /**
      * @param  array<string, mixed>  $input
      */
@@ -188,6 +282,36 @@ class PatternGenerationService
         ];
 
         return implode("\n", $parts);
+    }
+
+
+
+    private function buildDevelopJamPrompt(Jam $jam, ?string $instruction): string
+    {
+        $sections = $jam->patterns
+            ->groupBy(fn (Pattern $pattern) => (string) ($pattern->pivot->section ?: 'Unsectioned'))
+            ->map(fn ($patterns, $section) => [
+                'name' => $section,
+                'patterns' => $patterns->map(fn (Pattern $pattern) => [
+                    'title' => $pattern->title,
+                    'content' => $pattern->content,
+                    'instrument' => $pattern->instrument,
+                    'notes' => $pattern->pivot->notes,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+
+        $payload = [
+            'jam' => [
+                'title' => $jam->title,
+                'sections' => $sections,
+            ],
+            'instruction' => $instruction !== null && trim($instruction) !== '' ? trim($instruction) : null,
+            'requirements' => 'Return at least 3 suggestions. Prefer concrete new_pattern ideas with playable text content. If the jam already has sections, suggest ways to strengthen or connect them.',
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
     }
 
     private function valueOrAuto(mixed $value): string
@@ -262,6 +386,57 @@ class PatternGenerationService
             'content' => $content,
             'notes' => $this->normalizeString($data['notes'] ?? null),
         ];
+    }
+
+
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeDevelopJamSuggestions(array $data): array
+    {
+        $rawSuggestions = $data['suggestions'] ?? [];
+
+        if (! is_array($rawSuggestions)) {
+            throw new RuntimeException('OpenAI returned unusable jam development data.');
+        }
+
+        $suggestions = [];
+
+        foreach ($rawSuggestions as $suggestion) {
+            if (! is_array($suggestion)) {
+                continue;
+            }
+
+            $type = $this->normalizeString($suggestion['type'] ?? null, false);
+
+            if ($type === null) {
+                continue;
+            }
+
+            if (! in_array($type, self::DEVELOP_JAM_ALLOWED_SUGGESTION_TYPES, true)) {
+                continue;
+            }
+
+            $suggestions[] = [
+                'type' => $type,
+                'section' => $this->normalizeString($suggestion['section'] ?? null),
+                'title' => $this->normalizeString($suggestion['title'] ?? null),
+                'instrument' => $this->normalizeString($suggestion['instrument'] ?? null),
+                'content' => $this->normalizeString($suggestion['content'] ?? null),
+                'notes' => $this->normalizeString($suggestion['notes'] ?? null),
+                'description' => $this->normalizeString($suggestion['description'] ?? null),
+                'from_section' => $this->normalizeString($suggestion['from_section'] ?? null),
+                'to_section' => $this->normalizeString($suggestion['to_section'] ?? null),
+            ];
+        }
+
+        if ($suggestions === []) {
+            throw new RuntimeException('OpenAI returned no usable jam development suggestions.');
+        }
+
+        return ['suggestions' => $suggestions];
     }
 
     private function normalizeString(mixed $value, bool $nullable = true): ?string
