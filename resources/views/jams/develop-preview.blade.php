@@ -32,19 +32,20 @@
 
                 <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">New Sections</h3>
+                        <h3 class="font-semibold text-gray-900">Section Ideas</h3>
                     </div>
                     @forelse (($suggestions['suggestions'] ?? []) as $index => $item)
                         @continue(($item['type'] ?? null) !== 'new_section')
                         <label class="flex items-start gap-3 border border-gray-200 rounded-md p-4">
-                            <input type="checkbox" name="selected[]" value="{{ $index }}" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" name="selected[]" value="{{ $index }}" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked>
                             <span>
-                                <span class="font-medium text-gray-900">{{ $item['section'] ?? 'New section' }}</span>
+                                <span class="font-medium text-gray-900">{{ $item['section'] ?? 'New section' }} Section Idea</span>
+                                <span class="block text-sm text-gray-600">Will create a Pattern in {{ $item['section'] ?? 'this section' }}.</span>
                                 <span class="block text-sm text-gray-700 mt-1">{{ $item['description'] ?? '' }}</span>
                             </span>
                         </label>
                     @empty
-                        <p class="text-sm text-gray-600">No new section suggestions.</p>
+                        <p class="text-sm text-gray-600">No section idea suggestions.</p>
                     @endforelse
                 </div>
 
