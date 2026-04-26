@@ -349,7 +349,7 @@ class AiJamDevelopmentTest extends TestCase
         $response->assertSee('name="selected[]" value="0" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked', false);
     }
 
-    public function test_ai_suggestions_create_new_patterns_and_attach_without_duplicate_existing_rows(): void
+    public function test_transition_save_reuses_existing_pattern_and_does_not_duplicate_attachment(): void
     {
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
@@ -379,7 +379,8 @@ class AiJamDevelopmentTest extends TestCase
             'attach_to_jam' => '1',
         ])->assertRedirect(route('jams.show', $jam));
 
-        $this->assertDatabaseCount('jam_pattern', 2);
+        $this->assertDatabaseCount('patterns', 1);
+        $this->assertDatabaseCount('jam_pattern', 1);
         $this->assertDatabaseHas('jam_pattern', [
             'jam_id' => $jam->id,
             'pattern_id' => $existing->id,
@@ -390,6 +391,280 @@ class AiJamDevelopmentTest extends TestCase
             'user_id' => $user->id,
             'title' => 'Transition: Verse → Chorus',
             'content' => 'Lift into chorus',
+        ]);
+    }
+
+    public function test_duplicate_transition_description_reuses_existing_pattern_even_when_metadata_differs(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $existing = Pattern::factory()->for($user)->create([
+            'title' => 'Transition: Verse → Chorus',
+            'type' => 'riff',
+            'instrument' => 'guitar',
+            'key' => 'A minor',
+            'tempo' => 90,
+            'style' => 'indie',
+            'difficulty' => 'intermediate',
+            'content' => 'Lift into chorus',
+            'notes' => 'Manual entry',
+        ]);
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'transition',
+                'description' => 'Lift into chorus',
+                'from_section' => 'Verse',
+                'to_section' => 'Chorus',
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('patterns', 1);
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $existing->id,
+            'section' => 'Chorus',
+        ]);
+    }
+
+    public function test_resaving_same_new_section_does_not_create_duplicate_pattern(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'new_section',
+                'section' => 'Bridge',
+                'description' => 'Try a quieter half-time bridge with sustained chords.',
+            ]],
+        ];
+
+        $payload = [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+
+        $pattern = Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Bridge Section Idea')
+            ->where('content', 'Try a quieter half-time bridge with sustained chords.')
+            ->first();
+
+        $this->assertNotNull($pattern);
+        $this->assertSame(1, Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Bridge Section Idea')
+            ->where('content', 'Try a quieter half-time bridge with sustained chords.')
+            ->count());
+        $this->assertSame(1, \DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $pattern->id)
+            ->count());
+    }
+
+    public function test_resaving_same_new_pattern_does_not_create_duplicate_pattern(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'new_pattern',
+                'section' => 'Chorus',
+                'title' => 'Elevated Anthem Chorus Melody',
+                'instrument' => 'guitar',
+                'content' => 'Try a rising melody over open chorus chords.',
+                'notes' => 'Keep it big and singable.',
+            ]],
+        ];
+
+        $payload = [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+
+        $pattern = Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Elevated Anthem Chorus Melody')
+            ->where('content', 'Try a rising melody over open chorus chords.')
+            ->first();
+
+        $this->assertNotNull($pattern);
+        $this->assertSame(1, Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Elevated Anthem Chorus Melody')
+            ->where('content', 'Try a rising melody over open chorus chords.')
+            ->count());
+        $this->assertSame(1, \DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $pattern->id)
+            ->count());
+    }
+
+    public function test_resaving_same_transition_does_not_create_duplicate_pattern(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'transition',
+                'description' => 'Use a one-bar drum fill into the chorus.',
+                'from_section' => 'Verse',
+                'to_section' => 'Chorus',
+            ]],
+        ];
+
+        $payload = [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), $payload)->assertRedirect(route('jams.show', $jam));
+
+        $pattern = Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Transition: Verse → Chorus')
+            ->where('content', 'Use a one-bar drum fill into the chorus.')
+            ->first();
+
+        $this->assertNotNull($pattern);
+        $this->assertSame(1, Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Transition: Verse → Chorus')
+            ->where('content', 'Use a one-bar drum fill into the chorus.')
+            ->count());
+        $this->assertSame(1, \DB::table('jam_pattern')
+            ->where('jam_id', $jam->id)
+            ->where('pattern_id', $pattern->id)
+            ->count());
+    }
+
+    public function test_transition_suggestions_with_same_direction_but_different_descriptions_create_separate_patterns(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $suggestions = [
+            'suggestions' => [
+                [
+                    'type' => 'transition',
+                    'description' => 'Use a snare fill into the chorus.',
+                    'from_section' => 'Verse',
+                    'to_section' => 'Chorus',
+                ],
+                [
+                    'type' => 'transition',
+                    'description' => 'Drop out all instruments for one bar before the chorus.',
+                    'from_section' => 'Verse',
+                    'to_section' => 'Chorus',
+                ],
+            ],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0, 1],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertSame(2, Pattern::query()
+            ->where('user_id', $user->id)
+            ->where('title', 'Transition: Verse → Chorus')
+            ->count());
+        $this->assertDatabaseHas('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Transition: Verse → Chorus',
+            'content' => 'Use a snare fill into the chorus.',
+        ]);
+        $this->assertDatabaseHas('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Transition: Verse → Chorus',
+            'content' => 'Drop out all instruments for one bar before the chorus.',
+        ]);
+    }
+
+    public function test_matching_ignores_case_and_surrounding_spaces_for_title_and_content(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $existing = Pattern::factory()->for($user)->create([
+            'title' => 'Bridge Section Idea',
+            'content' => 'Try a quieter half-time bridge with sustained chords.',
+        ]);
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'new_pattern',
+                'section' => 'Bridge',
+                'title' => '  bridge section idea  ',
+                'content' => '  try a quieter half-time bridge with sustained chords.  ',
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('patterns', 1);
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $existing->id,
+            'section' => 'Bridge',
+        ]);
+    }
+
+    public function test_resaving_normalized_transition_suggestion_reuses_existing_pattern(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $existing = Pattern::factory()->for($user)->create([
+            'title' => 'Transition: Verse → Chorus',
+            'type' => 'arrangement idea',
+            'content' => 'Use a one-bar drum fill into the chorus.',
+            'notes' => 'From Verse to Chorus',
+        ]);
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'transition',
+                'description' => '  use a one-bar drum fill into the chorus.  ',
+                'from_section' => 'Verse',
+                'to_section' => 'Chorus',
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('patterns', 1);
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $existing->id,
+            'section' => 'Chorus',
         ]);
     }
 
