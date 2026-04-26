@@ -45,6 +45,15 @@ class Jam extends Model
             ->withTimestamps();
     }
 
+    public static function sectionOrderSql(string $column = 'jam_pattern.section'): string
+    {
+        $cases = collect(self::SECTIONS)
+            ->map(fn ($section, $index) => "WHEN ? THEN {$index}")
+            ->join(' ');
+
+        return "CASE {$column} {$cases} ELSE ".count(self::SECTIONS).' END';
+    }
+
     public static function normalizeSection(string $section): string
     {
         $normalizedInput = static::normalizeSectionKey($section);
