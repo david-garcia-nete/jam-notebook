@@ -8,18 +8,27 @@
 
 
     <div class="py-8">
+        @php
+            $allSuggestions = $suggestions['suggestions'] ?? [];
+            $hasSuggestions = is_array($allSuggestions) && count($allSuggestions) > 0;
+        @endphp
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-2">
                 <h3 class="font-semibold text-gray-900">{{ $jam->title }}</h3>
                 @if ($instruction)
                     <p class="text-sm text-gray-600">Instruction: {{ $instruction }}</p>
                 @endif
-                <p class="text-sm text-gray-600">Select suggestions to save as new patterns.</p>
+                @if ($hasSuggestions)
+                    <p class="text-sm text-gray-600">Select suggestions to save as new patterns.</p>
+                @else
+                    <p class="text-sm text-gray-600">No usable AI suggestions were returned. Try regenerating with a more specific instruction.</p>
+                @endif
             </div>
 
-            <form method="POST" action="{{ route('jams.develop.save', $jam) }}" class="space-y-6">
-                @csrf
-                <input type="hidden" name="suggestions_json" value="{{ json_encode($suggestions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}">
+            @if ($hasSuggestions)
+                <form method="POST" action="{{ route('jams.develop.save', $jam) }}" class="space-y-6">
+                    @csrf
+                    <input type="hidden" name="suggestions_json" value="{{ json_encode($suggestions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}">
 
                 <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
                     <div class="flex items-center justify-between">
@@ -82,8 +91,9 @@
                     </label>
                 </div>
 
-                <x-primary-button>Save Selected Suggestions</x-primary-button>
-            </form>
+                    <x-primary-button>Save Selected Suggestions</x-primary-button>
+                </form>
+            @endif
         </div>
     </div>
 </x-app-layout>
