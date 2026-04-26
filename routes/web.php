@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/patterns/{pattern}', [PatternController::class, 'destroy'])->name('patterns.destroy');
 
     Route::resource('jams', JamController::class);
+    Route::get('/jams/{jam}/sheet', [JamController::class, 'sheet'])->name('jams.sheet');
     Route::post('/jams/{jam}/patterns', [JamController::class, 'attachPattern'])->name('jams.patterns.attach');
     Route::post('/jams/{jam}/patterns/{pattern}/update', [JamController::class, 'updatePatternPlacement'])->name('jams.patterns.update');
     Route::post('/jams/{jam}/patterns/{pattern}/move-up', [JamController::class, 'movePatternUp'])->name('jams.patterns.move-up');

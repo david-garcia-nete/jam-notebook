@@ -383,4 +383,96 @@ class JamTest extends TestCase
             'pattern_id' => $otherPattern->id,
         ]);
     }
+
+    public function test_authenticated_owner_can_view_jam_sheet(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create(['title' => 'Rehearsal Jam']);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee('Jam Sheet: Rehearsal Jam');
+    }
+
+    public function test_non_owner_cannot_view_jam_sheet(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $jam = Jam::factory()->for($owner)->create();
+
+        $this->actingAs($intruder)
+            ->get(route('jams.sheet', $jam))
+            ->assertForbidden();
+    }
+
+    public function test_jam_sheet_renders_sections_and_patterns_in_musical_order(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $chorusPattern = Pattern::factory()->for($user)->create(['title' => 'Chorus Pattern']);
+        $bridgePattern = Pattern::factory()->for($user)->create(['title' => 'Bridge Pattern']);
+        $introPattern = Pattern::factory()->for($user)->create(['title' => 'Intro Pattern']);
+        $versePattern = Pattern::factory()->for($user)->create(['title' => 'Verse Pattern']);
+
+        $jam->patterns()->attach($chorusPattern, ['section' => 'Chorus', 'position' => 1]);
+        $jam->patterns()->attach($bridgePattern, ['section' => 'Bridge', 'position' => 1]);
+        $jam->patterns()->attach($introPattern, ['section' => 'Intro', 'position' => 1]);
+        $jam->patterns()->attach($versePattern, ['section' => 'Verse', 'position' => 1]);
+
+        $response = $this->actingAs($user)->get(route('jams.sheet', $jam));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            'Intro',
+            'Intro Pattern',
+            'Verse',
+            'Verse Pattern',
+            'Chorus',
+            'Chorus Pattern',
+            'Bridge',
+            'Bridge Pattern',
+        ]);
+    }
+
+    public function test_jam_sheet_displays_full_pattern_content_without_truncation(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $fullContent = str_repeat('A', 205).' END-OF-PATTERN-CONTENT';
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Long Pattern',
+            'content' => $fullContent,
+        ]);
+
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee('END-OF-PATTERN-CONTENT', false);
+    }
+
+    public function test_jam_sheet_shows_empty_state_when_no_patterns(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee('No patterns in this jam yet.');
+    }
+
+    public function test_show_page_includes_jam_sheet_link(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertSee(route('jams.sheet', $jam));
+    }
 }

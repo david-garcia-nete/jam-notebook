@@ -4,6 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $jam->title }}</h2>
             <div class="flex items-center gap-2">
                 <a href="{{ route('jams.develop.create', $jam) }}" class="inline-flex items-center px-4 py-2 bg-indigo-100 border border-indigo-200 rounded-md text-xs uppercase tracking-widest text-indigo-700 hover:bg-indigo-200">Develop with AI</a>
+                <a href="{{ route('jams.sheet', $jam) }}" class="inline-flex items-center px-4 py-2 bg-emerald-100 border border-emerald-200 rounded-md text-xs uppercase tracking-widest text-emerald-700 hover:bg-emerald-200">Jam Sheet</a>
                 <a href="{{ route('jams.edit', $jam) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-xs uppercase tracking-widest text-gray-700 hover:bg-gray-50">Edit Jam</a>
             </div>
         </div>
