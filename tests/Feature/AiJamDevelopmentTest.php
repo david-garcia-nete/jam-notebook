@@ -277,7 +277,7 @@ class AiJamDevelopmentTest extends TestCase
         ]);
     }
 
-    public function test_empty_new_section_description_uses_fallback_content(): void
+    public function test_empty_new_section_description_uses_fallback_content_and_attaches_pattern(): void
     {
         $user = User::factory()->create();
         $jam = Jam::factory()->for($user)->create();
@@ -311,6 +311,15 @@ class AiJamDevelopmentTest extends TestCase
 
         $this->assertNotNull($pattern);
         $this->assertNotSame('', trim((string) $pattern->content));
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $pattern->id,
+            'section' => 'Bridge',
+        ]);
+        $this->assertDatabaseMissing('patterns', [
+            'id' => $pattern->id,
+            'content' => '',
+        ]);
     }
 
     public function test_preview_checks_section_ideas_by_default(): void
