@@ -18,6 +18,7 @@ class Jam extends Model
         'Verse',
         'Pre-Chorus',
         'Chorus',
+        'Interlude',
         'Bridge',
         'Solo',
         'Outro',

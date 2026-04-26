@@ -45,7 +45,7 @@ class JamController extends Controller
         $jam->load(['patterns' => fn ($query) => $query
             ->where('user_id', auth()->id())
             ->orderByRaw(
-                "CASE jam_pattern.section WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 WHEN ? THEN 5 WHEN ? THEN 6 ELSE 7 END",
+                "CASE jam_pattern.section WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 WHEN ? THEN 5 WHEN ? THEN 6 WHEN ? THEN 7 ELSE 8 END",
                 Jam::SECTIONS
             )
             ->orderBy('jam_pattern.section')
