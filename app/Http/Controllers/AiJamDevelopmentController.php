@@ -213,7 +213,7 @@ class AiJamDevelopmentController extends Controller
         $attributes['title'] = $title === '' ? 'AI Jam Idea' : $title;
         $attributes['content'] = $content;
 
-        $existingPattern = $this->findExistingUserPattern($request, $attributes['title'], $attributes['content']);
+        $existingPattern = $this->findExistingUserPattern($request, $attributes);
 
         if ($existingPattern) {
             return $existingPattern;
@@ -222,19 +222,20 @@ class AiJamDevelopmentController extends Controller
         return $request->user()->patterns()->create($attributes);
     }
 
-    private function findExistingUserPattern(Request $request, string $title, string $content): ?Pattern
+    private function findExistingUserPattern(Request $request, array $attributes): ?Pattern
     {
-        $normalizedTitle = trim($title);
-        $normalizedContent = trim($content);
+        $normalized = [
+            'title' => trim((string) ($attributes['title'] ?? '')),
+            'content' => trim((string) ($attributes['content'] ?? '')),
+        ];
 
-        if ($normalizedTitle === '' || $normalizedContent === '') {
+        if ($normalized['title'] === '' || $normalized['content'] === '') {
             return null;
         }
 
-        return $request->user()
-            ->patterns()
-            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($normalizedTitle)])
-            ->whereRaw('LOWER(TRIM(content)) = ?', [strtolower($normalizedContent)])
+        return $request->user()->patterns()
+            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($normalized['title'])])
+            ->whereRaw('LOWER(TRIM(content)) = ?', [strtolower($normalized['content'])])
             ->first();
     }
 
