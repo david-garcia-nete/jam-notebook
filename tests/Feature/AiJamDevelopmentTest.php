@@ -277,16 +277,24 @@ class AiJamDevelopmentTest extends TestCase
         ]);
     }
 
-    public function test_relaxed_schema_accepts_minimal_suggestion_with_only_type(): void
+    public function test_openai_schema_requires_all_suggestion_fields_and_allows_null_values(): void
     {
         config()->set('services.openai.key', 'test-key');
 
         Http::fake([
             'https://api.openai.com/v1/responses' => Http::response([
                 'output_text' => json_encode([
-                    'suggestions' => [
-                        ['type' => 'new_section'],
-                    ],
+                    'suggestions' => [[
+                        'type' => 'new_section',
+                        'section' => null,
+                        'title' => null,
+                        'instrument' => null,
+                        'content' => null,
+                        'notes' => null,
+                        'description' => null,
+                        'from_section' => null,
+                        'to_section' => null,
+                    ]],
                 ]),
             ]),
         ]);
@@ -295,18 +303,36 @@ class AiJamDevelopmentTest extends TestCase
         $jam = Jam::factory()->for($user)->create();
 
         $response = $this->actingAs($user)->post(route('jams.develop.store', $jam), [
-            'instruction' => 'Only minimal suggestions',
+            'instruction' => 'Use nullable optional values',
         ]);
 
         $response->assertOk()->assertSee('AI Jam Suggestions');
 
         Http::assertSent(function ($request): bool {
-            $required = data_get(
-                $request->data(),
-                'text.format.schema.properties.suggestions.items.required'
-            );
+            $itemSchema = data_get($request->data(), 'text.format.schema.properties.suggestions.items');
+            $required = $itemSchema['required'] ?? null;
+            $properties = $itemSchema['properties'] ?? [];
 
-            return $required === ['type'];
+            return $required === [
+                'type',
+                'section',
+                'title',
+                'instrument',
+                'content',
+                'notes',
+                'description',
+                'from_section',
+                'to_section',
+            ]
+                && data_get($properties, 'type.type') === 'string'
+                && data_get($properties, 'section.type') === ['string', 'null']
+                && data_get($properties, 'title.type') === ['string', 'null']
+                && data_get($properties, 'instrument.type') === ['string', 'null']
+                && data_get($properties, 'content.type') === ['string', 'null']
+                && data_get($properties, 'notes.type') === ['string', 'null']
+                && data_get($properties, 'description.type') === ['string', 'null']
+                && data_get($properties, 'from_section.type') === ['string', 'null']
+                && data_get($properties, 'to_section.type') === ['string', 'null'];
         });
     }
 }
