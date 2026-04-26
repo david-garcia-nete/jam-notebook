@@ -213,7 +213,7 @@ class AiJamDevelopmentController extends Controller
         $attributes['title'] = $title === '' ? 'AI Jam Idea' : $title;
         $attributes['content'] = $content;
 
-        $existingPattern = $this->findExistingUserPattern($request, $attributes['title'], $attributes['content']);
+        $existingPattern = $this->findExistingUserPattern($request, $attributes);
 
         if ($existingPattern) {
             return $existingPattern;
@@ -222,20 +222,43 @@ class AiJamDevelopmentController extends Controller
         return $request->user()->patterns()->create($attributes);
     }
 
-    private function findExistingUserPattern(Request $request, string $title, string $content): ?Pattern
+    private function findExistingUserPattern(Request $request, array $attributes): ?Pattern
     {
-        $normalizedTitle = trim($title);
-        $normalizedContent = trim($content);
+        $normalized = [
+            'title' => trim((string) ($attributes['title'] ?? '')),
+            'type' => $this->nullableString($attributes['type'] ?? null),
+            'instrument' => $this->nullableString($attributes['instrument'] ?? null),
+            'key' => $this->nullableString($attributes['key'] ?? null),
+            'tempo' => isset($attributes['tempo']) ? (int) $attributes['tempo'] : null,
+            'style' => $this->nullableString($attributes['style'] ?? null),
+            'difficulty' => $this->nullableString($attributes['difficulty'] ?? null),
+            'content' => trim((string) ($attributes['content'] ?? '')),
+            'notes' => $this->nullableString($attributes['notes'] ?? null),
+        ];
 
-        if ($normalizedTitle === '' || $normalizedContent === '') {
+        if ($normalized['title'] === '' || $normalized['content'] === '') {
             return null;
         }
 
-        return $request->user()
-            ->patterns()
-            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($normalizedTitle)])
-            ->whereRaw('LOWER(TRIM(content)) = ?', [strtolower($normalizedContent)])
-            ->first();
+        $query = $request->user()->patterns();
+
+        foreach (['title', 'type', 'instrument', 'key', 'style', 'difficulty', 'content', 'notes'] as $field) {
+            if ($normalized[$field] === null) {
+                $query->whereNull($field);
+
+                continue;
+            }
+
+            $query->whereRaw('LOWER(TRIM('.$field.')) = ?', [strtolower($normalized[$field])]);
+        }
+
+        if ($normalized['tempo'] === null) {
+            $query->whereNull('tempo');
+        } else {
+            $query->where('tempo', $normalized['tempo']);
+        }
+
+        return $query->first();
     }
 
     private function ensureOwner(Jam $jam): void
