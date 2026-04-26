@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Jam;
+use App\Models\Pattern;
 use App\Services\PatternGenerationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -102,7 +103,7 @@ class AiJamDevelopmentController extends Controller
                     $description = 'Create a new '.$section.' section idea for this jam.';
                 }
 
-                $pattern = $request->user()->patterns()->create([
+                $pattern = $this->createOrReusePattern($request, [
                     'title' => $section.' Section Idea',
                     'type' => 'arrangement idea',
                     'instrument' => $this->nullableString($suggestion['instrument'] ?? null),
@@ -110,8 +111,7 @@ class AiJamDevelopmentController extends Controller
                     'notes' => 'AI suggested adding a '.$section.' section.',
                 ]);
 
-                if ($pattern->content === '') {
-                    $pattern->delete();
+                if (! $pattern) {
                     continue;
                 }
 
@@ -125,15 +125,14 @@ class AiJamDevelopmentController extends Controller
             if ($type === 'new_pattern') {
                 $section = Jam::normalizeSection((string) ($suggestion['section'] ?? 'Verse'));
 
-                $pattern = $request->user()->patterns()->create([
+                $pattern = $this->createOrReusePattern($request, [
                     'title' => trim((string) ($suggestion['title'] ?? 'AI Jam Idea')),
                     'instrument' => $this->nullableString($suggestion['instrument'] ?? null),
                     'content' => trim((string) ($suggestion['content'] ?? '')),
                     'notes' => $this->nullableString($suggestion['notes'] ?? null),
                 ]);
 
-                if ($pattern->content === '') {
-                    $pattern->delete();
+                if (! $pattern) {
                     continue;
                 }
 
@@ -153,14 +152,14 @@ class AiJamDevelopmentController extends Controller
                     continue;
                 }
 
-                $pattern = $request->user()->patterns()->create([
+                $pattern = $this->createOrReusePattern($request, [
                     'title' => 'Transition: '.$from.' → '.$to,
                     'type' => 'arrangement idea',
                     'content' => $description,
                     'notes' => 'From '.$from.' to '.$to,
                 ]);
 
-                if ($attachToJam) {
+                if ($pattern && $attachToJam) {
                     $this->attachPatternToSection($jam, $pattern->id, $to);
                 }
             }
@@ -200,6 +199,43 @@ class AiJamDevelopmentController extends Controller
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function createOrReusePattern(Request $request, array $attributes): ?Pattern
+    {
+        $title = trim((string) ($attributes['title'] ?? ''));
+        $content = trim((string) ($attributes['content'] ?? ''));
+
+        if ($content === '') {
+            return null;
+        }
+
+        $attributes['title'] = $title === '' ? 'AI Jam Idea' : $title;
+        $attributes['content'] = $content;
+
+        $existingPattern = $this->findExistingUserPattern($request, $attributes['title'], $attributes['content']);
+
+        if ($existingPattern) {
+            return $existingPattern;
+        }
+
+        return $request->user()->patterns()->create($attributes);
+    }
+
+    private function findExistingUserPattern(Request $request, string $title, string $content): ?Pattern
+    {
+        $normalizedTitle = trim($title);
+        $normalizedContent = trim($content);
+
+        if ($normalizedTitle === '' || $normalizedContent === '') {
+            return null;
+        }
+
+        return $request->user()
+            ->patterns()
+            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($normalizedTitle)])
+            ->whereRaw('LOWER(TRIM(content)) = ?', [strtolower($normalizedContent)])
+            ->first();
     }
 
     private function ensureOwner(Jam $jam): void
