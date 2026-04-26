@@ -394,6 +394,46 @@ class AiJamDevelopmentTest extends TestCase
         ]);
     }
 
+    public function test_duplicate_transition_description_reuses_existing_pattern_even_when_metadata_differs(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+
+        $existing = Pattern::factory()->for($user)->create([
+            'title' => 'Transition: Verse → Chorus',
+            'type' => 'riff',
+            'instrument' => 'guitar',
+            'key' => 'A minor',
+            'tempo' => 90,
+            'style' => 'indie',
+            'difficulty' => 'intermediate',
+            'content' => 'Lift into chorus',
+            'notes' => 'Manual entry',
+        ]);
+
+        $suggestions = [
+            'suggestions' => [[
+                'type' => 'transition',
+                'description' => 'Lift into chorus',
+                'from_section' => 'Verse',
+                'to_section' => 'Chorus',
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('jams.develop.save', $jam), [
+            'suggestions_json' => json_encode($suggestions),
+            'selected' => [0],
+            'attach_to_jam' => '1',
+        ])->assertRedirect(route('jams.show', $jam));
+
+        $this->assertDatabaseCount('patterns', 1);
+        $this->assertDatabaseHas('jam_pattern', [
+            'jam_id' => $jam->id,
+            'pattern_id' => $existing->id,
+            'section' => 'Chorus',
+        ]);
+    }
+
     public function test_resaving_same_new_section_does_not_create_duplicate_pattern(): void
     {
         $user = User::factory()->create();
