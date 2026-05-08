@@ -9,7 +9,7 @@
 
     <div>
         <x-input-label for="content" :value="__('Content')" />
-        <textarea id="content" name="content" rows="6" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('content', $pattern->content ?? '') }}</textarea>
+        <textarea id="content" name="content" rows="6" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm font-mono whitespace-pre overflow-x-auto resize-y focus:border-indigo-500 focus:ring-indigo-500" wrap="off" required>{{ old('content', $pattern->content ?? '') }}</textarea>
         <x-input-error class="mt-2" :messages="$errors->get('content')" />
     </div>
 
