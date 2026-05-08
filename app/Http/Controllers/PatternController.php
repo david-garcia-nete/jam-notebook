@@ -85,6 +85,15 @@ class PatternController extends Controller
         ]);
     }
 
+    public function show(Pattern $pattern): View
+    {
+        $this->ensureOwner($pattern);
+
+        return view('patterns.show', [
+            'pattern' => $pattern,
+        ]);
+    }
+
     public function update(Request $request, Pattern $pattern): RedirectResponse
     {
         $this->ensureOwner($pattern);
