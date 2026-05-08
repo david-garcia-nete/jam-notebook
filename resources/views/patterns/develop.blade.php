@@ -23,7 +23,9 @@
                     @endif
                 </p>
                 <p class="text-gray-900 font-medium">{{ $pattern->title }}</p>
-                <p class="text-gray-800 whitespace-pre-line">{{ $pattern->content }}</p>
+                <div class="overflow-x-auto">
+                    <pre class="m-0 text-gray-800 font-mono whitespace-pre">{{ $pattern->content }}</pre>
+                </div>
                 @if ($pattern->notes)
                     <p class="text-sm text-gray-600 whitespace-pre-line">Notes: {{ $pattern->notes }}</p>
                 @endif

@@ -82,7 +82,9 @@
                             </div>
                         </div>
 
-                        <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($pattern->content, 200) }}</p>
+                        <div class="overflow-x-auto">
+                            <pre class="m-0 text-sm text-gray-800 font-mono whitespace-pre">{{ \Illuminate\Support\Str::limit($pattern->content, 200) }}</pre>
+                        </div>
 
                         @if ($pattern->notes)
                             <p class="text-sm text-gray-600">Notes: {{ \Illuminate\Support\Str::limit($pattern->notes, 120) }}</p>
