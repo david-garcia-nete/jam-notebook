@@ -475,4 +475,43 @@ class JamTest extends TestCase
             ->assertOk()
             ->assertSee(route('jams.sheet', $jam));
     }
+
+    public function test_jam_show_page_preserves_ascii_pattern_whitespace(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $ascii = "HH|x-x-x-x-x-x-x-x-|
+SD|----o-------o---|
+KD|o-------o-o-----|";
+        $pattern = Pattern::factory()->for($user)->create(['title' => 'Drum Grid', 'content' => $ascii]);
+
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertSee($ascii, false)
+            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('overflow-x-auto', false);
+    }
+
+    public function test_jam_sheet_page_preserves_ascii_pattern_whitespace(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $ascii = "HH|x-x-x-x-x-x-x-x-|
+SD|----o-------o---|
+KD|o-------o-o-----|";
+        $pattern = Pattern::factory()->for($user)->create(['title' => 'Sheet Groove', 'content' => $ascii]);
+
+        $jam->patterns()->attach($pattern, ['section' => 'Chorus', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee($ascii, false)
+            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('overflow-x-auto', false);
+    }
+
 }

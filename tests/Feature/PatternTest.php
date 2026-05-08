@@ -200,4 +200,31 @@ class PatternTest extends TestCase
         $response->assertDontSee('Wrong Instrument');
         $response->assertDontSee('Wrong Style');
     }
+
+    public function test_pattern_library_preview_renders_longer_multiline_ascii_content(): void
+    {
+        $user = User::factory()->create();
+        $content = "HH|x-x-x-x-x-x-x-x-|
+SD|----o-------o---|
+KD|o-------o-o-----|
+T1|------o-------o-|
+T2|--o-------o-----|
+CY|--------x-------|
+";
+
+        Pattern::factory()->for($user)->create([
+            'title' => 'Pocket Groove',
+            'content' => $content,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.index'))
+            ->assertOk()
+            ->assertSee('T2|--o-------o-----|', false)
+            ->assertSee('CY|--------x-------|', false)
+            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('max-h-60', false)
+            ->assertSee('…', false);
+    }
+
 }
