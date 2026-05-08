@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/patterns/{pattern}/develop', [AiPatternDevelopmentController::class, 'store'])->name('patterns.develop.store');
     Route::post('/patterns/{pattern}/develop/save', [AiPatternDevelopmentController::class, 'save'])->name('patterns.develop.save');
 
+    Route::get('/patterns/{pattern}', [PatternController::class, 'show'])->name('patterns.show');
     Route::get('/patterns/{pattern}/edit', [PatternController::class, 'edit'])->name('patterns.edit');
     Route::put('/patterns/{pattern}', [PatternController::class, 'update'])->name('patterns.update');
     Route::delete('/patterns/{pattern}', [PatternController::class, 'destroy'])->name('patterns.destroy');

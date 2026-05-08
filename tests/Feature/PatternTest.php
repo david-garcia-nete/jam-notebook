@@ -75,6 +75,50 @@ class PatternTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_pattern_library_includes_view_link(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->get(route('patterns.index'))
+            ->assertOk()
+            ->assertSee(route('patterns.show', $pattern), false)
+            ->assertSee('View');
+    }
+
+    public function test_authenticated_user_can_view_full_pattern_content_on_show_page(): void
+    {
+        $user = User::factory()->create();
+        $content = "E|----------------|\nB|--3--5--7--8----|\nG|----------------|";
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Long Tab',
+            'content' => $content,
+            'notes' => 'Play slowly first.',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertSee('Long Tab')
+            ->assertSee($content)
+            ->assertSee('Play slowly first.')
+            ->assertSee('Develop with AI')
+            ->assertSee('Edit')
+            ->assertSee('Delete');
+    }
+
+    public function test_authenticated_user_cannot_view_another_users_pattern(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherPattern = Pattern::factory()->for($otherUser)->create();
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $otherPattern))
+            ->assertForbidden();
+    }
+
     public function test_authenticated_user_can_update_their_own_pattern(): void
     {
         $user = User::factory()->create();
