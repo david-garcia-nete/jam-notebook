@@ -40,9 +40,7 @@
                     </div>
                 </div>
 
-                <div class="overflow-x-auto rounded-md bg-gray-50 border border-gray-200 p-4">
-                    <pre class="m-0 text-sm text-gray-800 font-mono whitespace-pre">{{ $pattern->content }}</pre>
-                </div>
+                @include('patterns.partials.content', ['content' => $pattern->content])
 
                 @if ($pattern->notes)
                     <div>

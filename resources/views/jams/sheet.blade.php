@@ -53,7 +53,9 @@
                                         · {{ $pattern->instrument ?: 'No instrument' }}
                                         · Position {{ $pattern->pivot->position }}
                                     </p>
-                                    <p class="mt-2 text-gray-900 whitespace-pre-line">{{ $pattern->content }}</p>
+                                    <div class="mt-2">
+                                        @include('patterns.partials.content', ['content' => $pattern->content])
+                                    </div>
                                     @if ($pattern->pivot->notes)
                                         <p class="mt-2 text-sm text-gray-700"><span class="font-semibold">Placement notes:</span> {{ $pattern->pivot->notes }}</p>
                                     @endif

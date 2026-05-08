@@ -99,7 +99,7 @@
                                     </form>
                                 </div>
 
-                                <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($pattern->content, 200) }}</p>
+                                @include('patterns.partials.content', ['content' => $pattern->content])
 
                                 <form method="POST" action="{{ route('jams.patterns.update', [$jam, $pattern]) }}" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @csrf
