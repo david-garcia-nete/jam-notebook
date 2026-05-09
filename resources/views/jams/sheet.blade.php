@@ -56,8 +56,11 @@
                                     <div class="mt-2">
                                         @include('patterns.partials.content', ['content' => $pattern->content])
                                     </div>
+                                    @if ($pattern->notes)
+                                        <p class="mt-2 text-sm text-gray-600"><span class="font-semibold">Pattern Notes:</span> {{ $pattern->notes }}</p>
+                                    @endif
                                     @if ($pattern->pivot->notes)
-                                        <p class="mt-2 text-sm text-gray-700"><span class="font-semibold">Placement notes:</span> {{ $pattern->pivot->notes }}</p>
+                                        <p class="mt-2 text-sm text-gray-700"><span class="font-semibold">Placement Notes:</span> {{ $pattern->pivot->notes }}</p>
                                     @endif
                                 </article>
                             @endforeach
@@ -94,9 +97,10 @@ trim(
                         'Position '.$pattern->pivot->position,
                     ])->join(' | ');
 
-                    $notes = $pattern->pivot->notes ? "\nPlacement notes: {$pattern->pivot->notes}" : '';
+                    $patternNotes = $pattern->notes ? "\nPattern Notes: {$pattern->notes}" : '';
+                    $placementNotes = $pattern->pivot->notes ? "\nPlacement Notes: {$pattern->pivot->notes}" : '';
 
-                    return "- {$pattern->title}\n  {$metadata}\n{$pattern->content}{$notes}";
+                    return "- {$pattern->title}\n  {$metadata}\n{$pattern->content}{$patternNotes}{$placementNotes}";
                 })->join("\n\n");
             })->join("\n\n"),
     ])->filter()->join("\n\n")

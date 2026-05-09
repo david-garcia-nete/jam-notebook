@@ -101,6 +101,14 @@
 
                                 @include('patterns.partials.content', ['content' => $pattern->content])
 
+                                @if ($pattern->notes)
+                                    <p class="text-sm text-gray-600"><span class="font-semibold">Pattern Notes:</span> {{ $pattern->notes }}</p>
+                                @endif
+
+                                @if ($pattern->pivot->notes)
+                                    <p class="text-sm text-gray-700"><span class="font-semibold">Placement Notes:</span> {{ $pattern->pivot->notes }}</p>
+                                @endif
+
                                 <form method="POST" action="{{ route('jams.patterns.update', [$jam, $pattern]) }}" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @csrf
                                     <div>
