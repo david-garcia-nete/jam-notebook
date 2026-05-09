@@ -514,4 +514,55 @@ KD|o-------o-o-----|";
             ->assertSee('overflow-x-auto', false);
     }
 
+    public function test_jam_detail_page_displays_pattern_notes_when_present(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notes' => 'Pattern-level drum accent note.',
+        ]);
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertSee('Pattern Notes:')
+            ->assertSee('Pattern-level drum accent note.');
+    }
+
+    public function test_jam_sheet_page_displays_pattern_notes_when_present(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notes' => 'On the fourth bar the last kick hits twice.',
+        ]);
+        $jam->patterns()->attach($pattern, ['section' => 'Intro', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee('Pattern Notes:')
+            ->assertSee('On the fourth bar the last kick hits twice.');
+    }
+
+    public function test_blank_pattern_notes_do_not_render_empty_notes_section_on_jam_pages(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create(['notes' => null]);
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1, 'notes' => null]);
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertDontSee('Pattern Notes:');
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertDontSee('Pattern Notes:')
+            ->assertDontSee('Placement Notes:');
+    }
+
 }
