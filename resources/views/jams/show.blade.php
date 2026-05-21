@@ -99,14 +99,22 @@
                                     </form>
                                 </div>
 
-                                @include('patterns.partials.content', ['content' => $pattern->content])
+                                @if (filled(trim((string) $pattern->content)))
+                                    @include('patterns.partials.content', ['content' => $pattern->content])
+                                @endif
 
-                                @if ($pattern->notes)
+                                @if (filled(trim((string) $pattern->notes)))
                                     <div class="space-y-1">
                                         <h6 class="text-xs font-semibold uppercase tracking-wide text-gray-600">Tablature / Notes</h6>
                                         <div class="rounded-md border border-gray-200 bg-gray-50 p-3 overflow-x-auto">
                                             <pre class="text-sm text-gray-700 font-mono whitespace-pre">{{ $pattern->notes }}</pre>
                                         </div>
+                                    </div>
+                                @endif
+
+                                @if (filled(trim((string) $pattern->notation_url)))
+                                    <div>
+                                        <a href="{{ $pattern->notation_url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-sky-600 hover:text-sky-800">Open notation</a>
                                     </div>
                                 @endif
 

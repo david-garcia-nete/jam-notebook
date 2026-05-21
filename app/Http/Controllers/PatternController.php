@@ -130,7 +130,7 @@ class PatternController extends Controller
             'tempo' => ['nullable', 'integer', 'min:20', 'max:300'],
             'style' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'in:beginner,intermediate,advanced'],
-            'content' => ['required', 'string'],
+            'content' => ['nullable', 'string'],
             'notation_url' => ['nullable', 'url', 'max:2048'],
             'notes' => ['nullable', 'string'],
         ]);

@@ -43,6 +43,60 @@ class PatternTest extends TestCase
         ]);
     }
 
+    public function test_pattern_can_be_created_with_only_title(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/patterns', [
+            'title' => 'Title Only Pattern',
+        ]);
+
+        $response->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', [
+            'user_id' => $user->id,
+            'title' => 'Title Only Pattern',
+            'content' => null,
+            'notation_url' => null,
+        ]);
+    }
+
+    public function test_pattern_can_be_created_and_updated_with_notation_url_and_blank_content(): void
+    {
+        $user = User::factory()->create();
+
+        $createResponse = $this->actingAs($user)->post('/patterns', [
+            'title' => 'Notation First',
+            'content' => '',
+            'notation_url' => 'https://example.com/notation/notation-first',
+        ]);
+
+        $createResponse->assertRedirect(route('patterns.index'));
+
+        $pattern = Pattern::query()->where('user_id', $user->id)->where('title', 'Notation First')->firstOrFail();
+
+        $this->assertDatabaseHas('patterns', [
+            'id' => $pattern->id,
+            'content' => '',
+            'notation_url' => 'https://example.com/notation/notation-first',
+        ]);
+
+        $updateResponse = $this->actingAs($user)->put(route('patterns.update', $pattern), [
+            'title' => 'Notation First Updated',
+            'content' => '',
+            'notation_url' => 'https://example.com/notation/notation-first-updated',
+        ]);
+
+        $updateResponse->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', [
+            'id' => $pattern->id,
+            'title' => 'Notation First Updated',
+            'content' => '',
+            'notation_url' => 'https://example.com/notation/notation-first-updated',
+        ]);
+    }
+
     public function test_authenticated_user_can_see_their_own_patterns(): void
     {
         $user = User::factory()->create();
@@ -254,6 +308,30 @@ CY|--------x-------|
             ->assertSee('text-sm text-gray-700 whitespace-pre-line leading-relaxed', false)
             ->assertSee('max-h-60', false)
             ->assertSee('…', false);
+    }
+
+    public function test_pattern_pages_do_not_render_empty_content_or_notes_sections(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Blank Display Fields',
+            'content' => '   ',
+            'notes' => '   ',
+            'notation_url' => '',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertDontSee('Tablature / Notes')
+            ->assertDontSee('Open notation')
+            ->assertDontSee('whitespace-pre-line leading-relaxed', false);
+
+        $this->actingAs($user)
+            ->get(route('patterns.index'))
+            ->assertOk()
+            ->assertDontSee('Tablature')
+            ->assertDontSee('max-h-60 overflow-hidden', false);
     }
 
 }

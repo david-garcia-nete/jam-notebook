@@ -86,9 +86,11 @@
                             </div>
                         </div>
 
-                        @include('patterns.partials.content', ['content' => $pattern->content, 'preview' => true])
+                        @if (filled(trim((string) $pattern->content)))
+                            @include('patterns.partials.content', ['content' => $pattern->content, 'preview' => true])
+                        @endif
 
-                        @if ($pattern->notes)
+                        @if (filled(trim((string) $pattern->notes)))
                             <div>
                                 <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Tablature</h4>
                                 <div class="mt-1 overflow-x-auto rounded-md border border-gray-200 bg-gray-50 p-4">
