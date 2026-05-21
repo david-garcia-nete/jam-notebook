@@ -93,8 +93,9 @@
                         @if (filled(trim((string) $pattern->notes)))
                             <div>
                                 <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Tablature</h4>
-                                <div class="mt-1 overflow-x-auto rounded-md border border-gray-200 bg-gray-50 p-4">
-                                    <pre class="m-0 text-sm text-gray-800 font-mono whitespace-pre leading-relaxed">{{ \Illuminate\Support\Str::limit($pattern->notes, 120) }}</pre>
+                                <div class="relative mt-1 max-h-48 overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-4">
+                                    <pre class="m-0 text-sm text-gray-800 font-mono whitespace-pre leading-relaxed">{{ $pattern->notes }}</pre>
+                                    <div class="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-gray-50 to-transparent"></div>
                                 </div>
                             </div>
                         @endif
