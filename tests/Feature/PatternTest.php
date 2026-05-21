@@ -251,7 +251,7 @@ CY|--------x-------|
             ->assertOk()
             ->assertSee('T2|--o-------o-----|', false)
             ->assertSee('CY|--------x-------|', false)
-            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('text-sm text-gray-700 whitespace-pre-line leading-relaxed', false)
             ->assertSee('max-h-60', false)
             ->assertSee('…', false);
     }

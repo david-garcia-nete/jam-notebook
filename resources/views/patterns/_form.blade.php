@@ -8,7 +8,7 @@
     </div>
 
     <div>
-        <x-input-label for="content" :value="__('Content')" />
+        <x-input-label for="content" :value="__('Description')" />
         <textarea id="content" name="content" rows="6" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('content', $pattern->content ?? '') }}</textarea>
         <x-input-error class="mt-2" :messages="$errors->get('content')" />
     </div>
@@ -74,7 +74,7 @@
     </div>
 
     <div>
-        <x-input-label for="notes" :value="__('Notes')" />
+        <x-input-label for="notes" :value="__('Tablature / Notes')" />
         <textarea id="notes" name="notes" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes', $pattern->notes ?? '') }}</textarea>
         <x-input-error class="mt-2" :messages="$errors->get('notes')" />
     </div>

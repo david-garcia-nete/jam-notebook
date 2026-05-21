@@ -483,7 +483,11 @@ class JamTest extends TestCase
         $ascii = "HH|x-x-x-x-x-x-x-x-|
 SD|----o-------o---|
 KD|o-------o-o-----|";
-        $pattern = Pattern::factory()->for($user)->create(['title' => 'Drum Grid', 'content' => $ascii]);
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Drum Grid',
+            'content' => 'Count in and hit hard on the downbeat.',
+            'notes' => $ascii,
+        ]);
 
         $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
 
@@ -491,8 +495,11 @@ KD|o-------o-o-----|";
             ->get(route('jams.show', $jam))
             ->assertOk()
             ->assertSee($ascii, false)
+            ->assertSee('Tablature / Notes', false)
             ->assertSee('font-mono whitespace-pre', false)
-            ->assertSee('overflow-x-auto', false);
+            ->assertSee('overflow-x-auto', false)
+            ->assertSee('Count in and hit hard on the downbeat.', false)
+            ->assertSee('text-sm text-gray-700 whitespace-pre-line leading-relaxed', false);
     }
 
     public function test_jam_sheet_page_preserves_ascii_pattern_whitespace(): void
@@ -502,7 +509,11 @@ KD|o-------o-o-----|";
         $ascii = "HH|x-x-x-x-x-x-x-x-|
 SD|----o-------o---|
 KD|o-------o-o-----|";
-        $pattern = Pattern::factory()->for($user)->create(['title' => 'Sheet Groove', 'content' => $ascii]);
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Sheet Groove',
+            'content' => 'Keep this section tight and even.',
+            'notes' => $ascii,
+        ]);
 
         $jam->patterns()->attach($pattern, ['section' => 'Chorus', 'position' => 1]);
 
@@ -510,8 +521,11 @@ KD|o-------o-o-----|";
             ->get(route('jams.sheet', $jam))
             ->assertOk()
             ->assertSee($ascii, false)
+            ->assertSee('Tablature / Notes', false)
             ->assertSee('font-mono whitespace-pre', false)
-            ->assertSee('overflow-x-auto', false);
+            ->assertSee('overflow-x-auto', false)
+            ->assertSee('Keep this section tight and even.', false)
+            ->assertSee('text-sm text-gray-700 whitespace-pre-line leading-relaxed', false);
     }
 
     public function test_jam_detail_page_displays_pattern_notes_when_present(): void
@@ -526,7 +540,7 @@ KD|o-------o-o-----|";
         $this->actingAs($user)
             ->get(route('jams.show', $jam))
             ->assertOk()
-            ->assertSee('Pattern Notes:')
+            ->assertSee('Tablature / Notes')
             ->assertSee('Pattern-level drum accent note.');
     }
 
@@ -542,7 +556,7 @@ KD|o-------o-o-----|";
         $this->actingAs($user)
             ->get(route('jams.sheet', $jam))
             ->assertOk()
-            ->assertSee('Pattern Notes:')
+            ->assertSee('Tablature / Notes')
             ->assertSee('On the fourth bar the last kick hits twice.');
     }
 
