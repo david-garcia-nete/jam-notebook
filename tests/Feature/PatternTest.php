@@ -310,6 +310,25 @@ CY|--------x-------|
             ->assertSee('…', false);
     }
 
+    public function test_pattern_library_tablature_preview_uses_larger_truncated_preview_area(): void
+    {
+        $user = User::factory()->create();
+        $notes = implode("\n", array_fill(0, 24, 'E|--0-2-3-2-0---0-2-3-5-|'));
+
+        Pattern::factory()->for($user)->create([
+            'title' => 'Long Tablature',
+            'notes' => $notes,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.index'))
+            ->assertOk()
+            ->assertSee('Long Tablature')
+            ->assertSee('max-h-48 overflow-hidden', false)
+            ->assertSee('bg-gradient-to-t from-gray-50 to-transparent', false)
+            ->assertSee('E|--0-2-3-2-0---0-2-3-5-|', false);
+    }
+
     public function test_pattern_pages_do_not_render_empty_content_or_notes_sections(): void
     {
         $user = User::factory()->create();

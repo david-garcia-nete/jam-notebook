@@ -64,6 +64,12 @@
                                             </div>
                                         </div>
                                     @endif
+                                    @if (filled(trim((string) $pattern->notation_url)))
+                                        <p class="mt-2 text-sm text-sky-700 break-all">
+                                            <span class="font-semibold text-gray-700">Notation:</span>
+                                            <a href="{{ $pattern->notation_url }}" target="_blank" rel="noopener noreferrer" class="underline hover:text-sky-900">{{ $pattern->notation_url }}</a>
+                                        </p>
+                                    @endif
                                     @if ($pattern->pivot->notes)
                                         <p class="mt-2 text-sm text-gray-700"><span class="font-semibold">Placement Notes:</span> {{ $pattern->pivot->notes }}</p>
                                     @endif

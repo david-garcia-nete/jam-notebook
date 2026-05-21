@@ -285,6 +285,29 @@ class JamTest extends TestCase
             ->assertSee('rel="noopener noreferrer"', false);
     }
 
+    public function test_jam_sheet_displays_full_clickable_notation_url_instead_of_open_notation_button_text(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $notationUrl = 'https://www.noteflight.com/scores/view/abc1234567890?mid=print-friendly-example';
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Notation Pattern',
+            'notation_url' => $notationUrl,
+        ]);
+
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertSee('Notation:')
+            ->assertSee($notationUrl)
+            ->assertSee('break-all', false)
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false)
+            ->assertDontSee('Open notation');
+    }
+
     public function test_jam_show_page_displays_sections_in_musical_order(): void
     {
         $user = User::factory()->create();
