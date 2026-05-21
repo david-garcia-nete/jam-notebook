@@ -67,7 +67,7 @@ class PatternTest extends TestCase
 
         $createResponse = $this->actingAs($user)->post('/patterns', [
             'title' => 'Notation First',
-            'content' => '',
+            'content' => null,
             'notation_url' => 'https://example.com/notation/notation-first',
         ]);
 
@@ -77,13 +77,13 @@ class PatternTest extends TestCase
 
         $this->assertDatabaseHas('patterns', [
             'id' => $pattern->id,
-            'content' => '',
+            'content' => null,
             'notation_url' => 'https://example.com/notation/notation-first',
         ]);
 
         $updateResponse = $this->actingAs($user)->put(route('patterns.update', $pattern), [
             'title' => 'Notation First Updated',
-            'content' => '',
+            'content' => null,
             'notation_url' => 'https://example.com/notation/notation-first-updated',
         ]);
 
@@ -92,7 +92,7 @@ class PatternTest extends TestCase
         $this->assertDatabaseHas('patterns', [
             'id' => $pattern->id,
             'title' => 'Notation First Updated',
-            'content' => '',
+            'content' => null,
             'notation_url' => 'https://example.com/notation/notation-first-updated',
         ]);
     }
