@@ -29,6 +29,7 @@ class PatternTest extends TestCase
             'tempo' => 120,
             'style' => 'pop',
             'difficulty' => 'beginner',
+            'notation_url' => 'https://example.com/notation/warmup',
             'notes' => 'Try in 3/4 next.',
         ]);
 
@@ -38,6 +39,7 @@ class PatternTest extends TestCase
             'user_id' => $user->id,
             'title' => 'Warmup chords',
             'content' => 'C - Am - F - G',
+            'notation_url' => 'https://example.com/notation/warmup',
         ]);
     }
 
@@ -78,13 +80,18 @@ class PatternTest extends TestCase
     public function test_pattern_library_includes_view_link(): void
     {
         $user = User::factory()->create();
-        $pattern = Pattern::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notation_url' => 'https://example.com/notation/library-link',
+        ]);
 
         $this->actingAs($user)
             ->get(route('patterns.index'))
             ->assertOk()
             ->assertSee(route('patterns.show', $pattern), false)
-            ->assertSee('View');
+            ->assertSee('View')
+            ->assertSee('Open notation')
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false);
     }
 
     public function test_authenticated_user_can_view_full_pattern_content_on_show_page(): void
@@ -94,6 +101,7 @@ class PatternTest extends TestCase
         $pattern = Pattern::factory()->for($user)->create([
             'title' => 'Long Tab',
             'content' => $content,
+            'notation_url' => 'https://example.com/notation/long-tab',
             'notes' => 'Play slowly first.',
         ]);
 
@@ -104,6 +112,9 @@ class PatternTest extends TestCase
             ->assertSee($content)
             ->assertSee('Play slowly first.')
             ->assertSee('Develop with AI')
+            ->assertSee('Open notation')
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false)
             ->assertSee('Edit')
             ->assertSee('Delete');
     }
@@ -136,6 +147,7 @@ class PatternTest extends TestCase
             'tempo' => 95,
             'style' => 'ambient',
             'difficulty' => 'intermediate',
+            'notation_url' => 'https://example.com/notation/new-title',
             'notes' => 'Use arpeggiator.',
         ]);
 
@@ -146,13 +158,30 @@ class PatternTest extends TestCase
             'title' => 'New Title',
             'content' => 'Updated pattern content',
             'instrument' => 'synth',
+            'notation_url' => 'https://example.com/notation/new-title',
         ]);
+    }
+
+
+    public function test_notation_url_must_be_a_valid_url_and_within_max_length(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/patterns', [
+            'title' => 'Bad notation',
+            'content' => 'C - F - G',
+            'notation_url' => 'not-a-url',
+        ]);
+
+        $response->assertSessionHasErrors('notation_url');
     }
 
     public function test_authenticated_user_can_delete_their_own_pattern(): void
     {
         $user = User::factory()->create();
-        $pattern = Pattern::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notation_url' => 'https://example.com/notation/library-link',
+        ]);
 
         $response = $this->actingAs($user)->delete(route('patterns.destroy', $pattern));
 
