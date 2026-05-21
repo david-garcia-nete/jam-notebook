@@ -38,6 +38,7 @@ class PatternFactory extends Factory
             'style' => fake()->randomElement(['rock', 'jazz', 'funk', 'ambient']),
             'difficulty' => fake()->randomElement(['beginner', 'intermediate', 'advanced']),
             'content' => fake()->paragraph(),
+            'notation_url' => fake()->optional()->url(),
             'notes' => fake()->optional()->sentence(),
         ];
     }
