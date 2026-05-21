@@ -259,6 +259,32 @@ class JamTest extends TestCase
         $response->assertSee('Chorus Hook');
     }
 
+    public function test_jam_show_page_displays_open_notation_link_for_attached_patterns(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $patternWithNotation = Pattern::factory()->for($user)->create([
+            'title' => 'Linked Pattern',
+            'notation_url' => 'https://example.com/notation/linked-pattern',
+        ]);
+        $patternWithoutNotation = Pattern::factory()->for($user)->create([
+            'title' => 'Unlinked Pattern',
+            'notation_url' => null,
+        ]);
+
+        $jam->patterns()->attach($patternWithNotation, ['section' => 'Verse', 'position' => 1]);
+        $jam->patterns()->attach($patternWithoutNotation, ['section' => 'Verse', 'position' => 2]);
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertSee('Linked Pattern')
+            ->assertSee('Open notation')
+            ->assertSee('https://example.com/notation/linked-pattern')
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false);
+    }
+
     public function test_jam_show_page_displays_sections_in_musical_order(): void
     {
         $user = User::factory()->create();
