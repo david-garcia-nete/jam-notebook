@@ -45,6 +45,14 @@
 
                 @include('patterns.partials.content', ['content' => $pattern->content])
 
+
+                @if ($pattern->notation_url)
+                    <div>
+                        <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Notation</h4>
+                        <a href="{{ $pattern->notation_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex items-center px-3 py-2 bg-sky-100 border border-sky-200 rounded-md text-xs font-semibold uppercase tracking-widest text-sky-700 hover:bg-sky-200">Open notation</a>
+                    </div>
+                @endif
+
                 @if ($pattern->notes)
                     <div>
                         <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Notes</h4>

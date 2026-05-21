@@ -256,4 +256,59 @@ CY|--------x-------|
             ->assertSee('…', false);
     }
 
+
+    public function test_notation_url_saves_on_pattern_update(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notation_url' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('patterns.update', $pattern), [
+                'title' => $pattern->title,
+                'content' => $pattern->content,
+                'notation_url' => 'https://example.com/notation/updated-link',
+            ])
+            ->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', [
+            'id' => $pattern->id,
+            'notation_url' => 'https://example.com/notation/updated-link',
+        ]);
+    }
+
+    public function test_notation_url_appears_on_pattern_index_page(): void
+    {
+        $user = User::factory()->create();
+        Pattern::factory()->for($user)->create([
+            'notation_url' => 'https://example.com/notation/index-link',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.index'))
+            ->assertOk()
+            ->assertSee('Open notation')
+            ->assertSee('https://example.com/notation/index-link')
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false);
+    }
+
+    public function test_notation_url_appears_on_pattern_show_page_in_notation_section(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'notation_url' => 'https://example.com/notation/show-link',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertSee('Notation')
+            ->assertSee('Open notation')
+            ->assertSee('https://example.com/notation/show-link')
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false);
+    }
+
 }
