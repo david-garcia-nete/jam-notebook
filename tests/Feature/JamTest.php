@@ -491,7 +491,7 @@ KD|o-------o-o-----|";
             ->get(route('jams.show', $jam))
             ->assertOk()
             ->assertSee($ascii, false)
-            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('whitespace-pre-line', false)
             ->assertSee('overflow-x-auto', false);
     }
 
@@ -510,7 +510,7 @@ KD|o-------o-o-----|";
             ->get(route('jams.sheet', $jam))
             ->assertOk()
             ->assertSee($ascii, false)
-            ->assertSee('font-mono whitespace-pre', false)
+            ->assertSee('whitespace-pre-line', false)
             ->assertSee('overflow-x-auto', false);
     }
 
