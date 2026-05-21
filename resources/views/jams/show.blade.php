@@ -102,7 +102,12 @@
                                 @include('patterns.partials.content', ['content' => $pattern->content])
 
                                 @if ($pattern->notes)
-                                    <p class="text-sm text-gray-600"><span class="font-semibold">Pattern Notes:</span> {{ $pattern->notes }}</p>
+                                    <div class="space-y-1">
+                                        <h6 class="text-xs font-semibold uppercase tracking-wide text-gray-600">Tablature / Notes</h6>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 p-3 overflow-x-auto">
+                                            <pre class="text-sm text-gray-700 font-mono whitespace-pre">{{ $pattern->notes }}</pre>
+                                        </div>
+                                    </div>
                                 @endif
 
                                 @if ($pattern->pivot->notes)
