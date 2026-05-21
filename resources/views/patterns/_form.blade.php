@@ -8,9 +8,22 @@
     </div>
 
     <div>
-        <x-input-label for="content" :value="__('Content')" />
-        <textarea id="content" name="content" rows="6" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('content', $pattern->content ?? '') }}</textarea>
+        <x-input-label for="content" :value="__('Description / Instructions')" />
+        <textarea id="content" name="content" rows="5" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('content', $pattern->content ?? '') }}</textarea>
         <x-input-error class="mt-2" :messages="$errors->get('content')" />
+    </div>
+
+
+    <div>
+        <x-input-label for="tablature" :value="__('Tablature')" />
+        <textarea id="tablature" name="tablature" rows="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono" required>{{ old('tablature', $pattern->tablature ?? '') }}</textarea>
+        <x-input-error class="mt-2" :messages="$errors->get('tablature')" />
+    </div>
+
+    <div>
+        <x-input-label for="notation_url" :value="__('Notation Link')" />
+        <x-text-input id="notation_url" name="notation_url" type="url" class="mt-1 block w-full" :value="old('notation_url', $pattern->notation_url ?? '')" />
+        <x-input-error class="mt-2" :messages="$errors->get('notation_url')" />
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

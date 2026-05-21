@@ -23,6 +23,8 @@ class Pattern extends Model
         'style',
         'difficulty',
         'content',
+        'tablature',
+        'notation_url',
         'notes',
     ];
 

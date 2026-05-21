@@ -40,7 +40,23 @@
                     </div>
                 </div>
 
-                @include('patterns.partials.content', ['content' => $pattern->content])
+                <div>
+                    <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Description / Instructions</h4>
+                    @include('patterns.partials.content', ['content' => $pattern->content])
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Tablature</h4>
+                    @include('patterns.partials.tablature', ['tablature' => $pattern->tablature])
+                </div>
+
+                @if ($pattern->notation_url)
+                    <div>
+                        <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Notation</h4>
+                        <a href="{{ $pattern->notation_url }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md text-xs font-semibold text-white uppercase tracking-widest hover:bg-indigo-500">Open notation</a>
+                        {{-- TODO: Add iframe notation embedding after allowlisting trusted hosts (e.g., noteflight.com). --}}
+                    </div>
+                @endif
 
                 @if ($pattern->notes)
                     <div>

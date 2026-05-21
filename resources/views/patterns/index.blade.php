@@ -83,7 +83,19 @@
                             </div>
                         </div>
 
-                        @include('patterns.partials.content', ['content' => $pattern->content, 'preview' => true])
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Description / Instructions</h4>
+                            @include('patterns.partials.content', ['content' => $pattern->content, 'preview' => true])
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold uppercase tracking-wider text-gray-500">Tablature</h4>
+                            @include('patterns.partials.tablature', ['tablature' => $pattern->tablature, 'preview' => true])
+                        </div>
+
+                        @if ($pattern->notation_url)
+                            <a href="{{ $pattern->notation_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md text-xs font-semibold text-white uppercase tracking-widest hover:bg-indigo-500">Open notation</a>
+                        @endif
 
                         @if ($pattern->notes)
                             <p class="text-sm text-gray-600">Notes: {{ \Illuminate\Support\Str::limit($pattern->notes, 120) }}</p>

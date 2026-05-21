@@ -22,7 +22,9 @@ class PatternTest extends TestCase
 
         $response = $this->actingAs($user)->post('/patterns', [
             'title' => 'Warmup chords',
-            'content' => 'C - Am - F - G',
+            'content' => 'Use this progression for verse sections.',
+            'tablature' => 'C - Am - F - G',
+            'notation_url' => 'https://www.noteflight.com/scores/example',
             'type' => 'chord progression',
             'instrument' => 'piano',
             'key' => 'C',
@@ -37,7 +39,9 @@ class PatternTest extends TestCase
         $this->assertDatabaseHas('patterns', [
             'user_id' => $user->id,
             'title' => 'Warmup chords',
-            'content' => 'C - Am - F - G',
+            'content' => 'Use this progression for verse sections.',
+            'tablature' => 'C - Am - F - G',
+            'notation_url' => 'https://www.noteflight.com/scores/example',
         ]);
     }
 
@@ -93,7 +97,8 @@ class PatternTest extends TestCase
         $content = "E|----------------|\nB|--3--5--7--8----|\nG|----------------|";
         $pattern = Pattern::factory()->for($user)->create([
             'title' => 'Long Tab',
-            'content' => $content,
+            'content' => 'Lead line outline for this idea.',
+            'tablature' => $content,
             'notes' => 'Play slowly first.',
         ]);
 
@@ -124,12 +129,15 @@ class PatternTest extends TestCase
         $user = User::factory()->create();
         $pattern = Pattern::factory()->for($user)->create([
             'title' => 'Old Title',
-            'content' => 'Old content',
+            'content' => 'Old description',
+            'tablature' => 'Old tab',
         ]);
 
         $response = $this->actingAs($user)->put(route('patterns.update', $pattern), [
             'title' => 'New Title',
-            'content' => 'Updated pattern content',
+            'content' => 'Updated pattern instructions',
+            'tablature' => 'Updated pattern tablature',
+            'notation_url' => 'https://musescore.com/example',
             'type' => 'melody',
             'instrument' => 'synth',
             'key' => 'D minor',
@@ -144,7 +152,9 @@ class PatternTest extends TestCase
         $this->assertDatabaseHas('patterns', [
             'id' => $pattern->id,
             'title' => 'New Title',
-            'content' => 'Updated pattern content',
+            'content' => 'Updated pattern instructions',
+            'tablature' => 'Updated pattern tablature',
+            'notation_url' => 'https://musescore.com/example',
             'instrument' => 'synth',
         ]);
     }
@@ -214,7 +224,8 @@ CY|--------x-------|
 
         Pattern::factory()->for($user)->create([
             'title' => 'Pocket Groove',
-            'content' => $content,
+            'content' => 'Lead line outline for this idea.',
+            'tablature' => $content,
         ]);
 
         $this->actingAs($user)
@@ -222,8 +233,8 @@ CY|--------x-------|
             ->assertOk()
             ->assertSee('T2|--o-------o-----|', false)
             ->assertSee('CY|--------x-------|', false)
-            ->assertSee('font-mono whitespace-pre', false)
-            ->assertSee('max-h-60', false)
+            ->assertSee('whitespace-pre-line', false)
+            ->assertSee('max-h-48', false)
             ->assertSee('…', false);
     }
 

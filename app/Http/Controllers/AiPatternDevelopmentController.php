@@ -77,6 +77,8 @@ class AiPatternDevelopmentController extends Controller
             'style' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'in:beginner,intermediate,advanced'],
             'content' => ['required', 'string'],
+            'tablature' => ['required', 'string'],
+            'notation_url' => ['nullable', 'url', 'max:2048'],
             'notes' => ['nullable', 'string'],
         ]);
 
