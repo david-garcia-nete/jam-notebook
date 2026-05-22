@@ -40,6 +40,7 @@ class PatternTest extends TestCase
             'title' => 'Warmup chords',
             'content' => 'C - Am - F - G',
             'notation_url' => 'https://example.com/notation/warmup',
+            'embed_code' => null,
         ]);
     }
 
@@ -351,6 +352,61 @@ CY|--------x-------|
             ->assertOk()
             ->assertDontSee('Tablature')
             ->assertDontSee('max-h-60 overflow-hidden', false);
+    }
+
+    public function test_user_can_save_pattern_with_embed_code_and_embed_code_is_optional(): void
+    {
+        $user = User::factory()->create();
+
+        $withEmbed = $this->actingAs($user)->post('/patterns', [
+            'title' => 'Embedded Pattern',
+            'embed_code' => '<iframe src="https://www.youtube.com/embed/abc123" width="560" height="315" allowfullscreen></iframe>',
+        ]);
+        $withEmbed->assertRedirect(route('patterns.index'));
+
+        $withoutEmbed = $this->actingAs($user)->post('/patterns', [
+            'title' => 'No Embed Pattern',
+        ]);
+        $withoutEmbed->assertRedirect(route('patterns.index'));
+
+        $this->assertDatabaseHas('patterns', ['title' => 'Embedded Pattern']);
+        $this->assertDatabaseHas('patterns', ['title' => 'No Embed Pattern', 'embed_code' => null]);
+    }
+
+    public function test_pattern_show_renders_sanitized_iframe_and_blocks_unsafe_embed_code(): void
+    {
+        $user = User::factory()->create();
+        $safePattern = Pattern::factory()->for($user)->create([
+            'title' => 'Safe Embed',
+            'embed_code' => '<iframe src="https://www.youtube-nocookie.com/embed/xyz789" width="640" height="360" allow="autoplay" allowfullscreen></iframe>',
+        ]);
+        $unsafePattern = Pattern::factory()->for($user)->create([
+            'title' => 'Unsafe Embed',
+            'embed_code' => '<script>alert(1)</script><iframe src="https://evil.example/embed/1"></iframe>',
+        ]);
+        $blankPattern = Pattern::factory()->for($user)->create([
+            'title' => 'No Embed',
+            'embed_code' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $safePattern))
+            ->assertOk()
+            ->assertSee('data-testid="pattern-embed"', false)
+            ->assertSee('https://www.youtube-nocookie.com/embed/xyz789', false)
+            ->assertDontSee('<script', false);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $unsafePattern))
+            ->assertOk()
+            ->assertDontSee('data-testid="pattern-embed"', false)
+            ->assertDontSee('<script', false)
+            ->assertDontSee('evil.example', false);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $blankPattern))
+            ->assertOk()
+            ->assertDontSee('data-testid="pattern-embed"', false);
     }
 
 }

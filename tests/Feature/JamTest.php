@@ -628,4 +628,36 @@ KD|o-------o-o-----|";
             ->assertDontSee('Placement Notes:');
     }
 
+    public function test_jam_detail_page_renders_sanitized_iframe_for_attached_pattern_embed_code(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'embed_code' => '<iframe src="https://soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/123" width="100%" height="166" frameborder="no" allow="autoplay"></iframe>',
+        ]);
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.show', $jam))
+            ->assertOk()
+            ->assertSee('data-testid="pattern-embed"', false)
+            ->assertSee('soundcloud.com/player/', false);
+    }
+
+    public function test_jam_sheet_does_not_render_iframe_embed_code(): void
+    {
+        $user = User::factory()->create();
+        $jam = Jam::factory()->for($user)->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'embed_code' => '<iframe src="https://www.musescore.com/user/1/scores/2/embed" width="100%" height="500"></iframe>',
+        ]);
+        $jam->patterns()->attach($pattern, ['section' => 'Verse', 'position' => 1]);
+
+        $this->actingAs($user)
+            ->get(route('jams.sheet', $jam))
+            ->assertOk()
+            ->assertDontSee('data-testid="pattern-embed"', false)
+            ->assertDontSee('<iframe', false);
+    }
+
 }

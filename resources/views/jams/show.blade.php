@@ -103,6 +103,8 @@
                                     @include('patterns.partials.content', ['content' => $pattern->content])
                                 @endif
 
+                                @include('patterns.partials.embed', ['pattern' => $pattern])
+
                                 @if (filled(trim((string) $pattern->notes)))
                                     <div class="space-y-1">
                                         <h6 class="text-xs font-semibold uppercase tracking-wide text-gray-600">Tablature / Notes</h6>

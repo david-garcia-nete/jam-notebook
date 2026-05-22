@@ -74,6 +74,13 @@
     </div>
 
     <div>
+        <x-input-label for="embed_code" :value="__('Embed Code')" />
+        <textarea id="embed_code" name="embed_code" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('embed_code', $pattern->embed_code ?? '') }}</textarea>
+        <p class="mt-1 text-sm text-gray-500">Paste official embed code from MuseScore, YouTube, SoundCloud, etc. Optional.</p>
+        <x-input-error class="mt-2" :messages="$errors->get('embed_code')" />
+    </div>
+
+    <div>
         <x-input-label for="notes" :value="__('Tablature / Notes')" />
         <textarea id="notes" name="notes" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes', $pattern->notes ?? '') }}</textarea>
         <x-input-error class="mt-2" :messages="$errors->get('notes')" />

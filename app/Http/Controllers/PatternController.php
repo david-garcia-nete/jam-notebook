@@ -132,6 +132,7 @@ class PatternController extends Controller
             'difficulty' => ['nullable', 'in:beginner,intermediate,advanced'],
             'content' => ['nullable', 'string'],
             'notation_url' => ['nullable', 'url', 'max:2048'],
+            'embed_code' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
         ]);
     }

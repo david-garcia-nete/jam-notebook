@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\PatternFactory;
+use App\Services\PatternEmbedSanitizer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,8 +25,14 @@ class Pattern extends Model
         'difficulty',
         'content',
         'notation_url',
+        'embed_code',
         'notes',
     ];
+
+    public function sanitizedEmbedCode(): ?string
+    {
+        return PatternEmbedSanitizer::sanitize($this->embed_code);
+    }
 
     public function user(): BelongsTo
     {
