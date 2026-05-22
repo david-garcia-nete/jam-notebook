@@ -373,6 +373,71 @@ CY|--------x-------|
         $this->assertDatabaseHas('patterns', ['title' => 'No Embed Pattern', 'embed_code' => null]);
     }
 
+
+    public function test_pattern_show_renders_saved_musescore_iframe_embed_code(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'MuseScore Embed',
+            'notation_url' => 'https://musescore.com/some-user/scores/123',
+            'embed_code' => '<iframe src="https://musescore.com/user/123/scores/456/embed" width="100%" height="500" frameborder="0" allowfullscreen></iframe>',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertSee('Open notation')
+            ->assertSee('data-testid="pattern-embed"', false)
+            ->assertSee('https://musescore.com/user/123/scores/456/embed', false);
+    }
+
+    public function test_pattern_show_renders_musescore_embed_url_with_query_string(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'MuseScore Embed With Query',
+            'embed_code' => '<iframe src="https://musescore.com/user/123/scores/456/embed?share=copy_link" width="100%" height="500" frameborder="0"></iframe>',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertSee('data-testid="pattern-embed"', false)
+            ->assertSee('https://musescore.com/user/123/scores/456/embed?share=copy_link', false);
+    }
+
+    public function test_pattern_show_does_not_render_unsafe_script_embed_code(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Unsafe Script Embed',
+            'embed_code' => '<script>alert(1)</script><iframe src="https://musescore.com/user/123/scores/456/embed"></iframe>',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertDontSee('data-testid="pattern-embed"', false)
+            ->assertDontSee('<script', false)
+            ->assertSee('Embed code could not be rendered.');
+    }
+
+    public function test_pattern_show_does_not_render_unsupported_iframe_host(): void
+    {
+        $user = User::factory()->create();
+        $pattern = Pattern::factory()->for($user)->create([
+            'title' => 'Unsupported Host Embed',
+            'embed_code' => '<iframe src="https://evil.example/embed/123" width="100%" height="500"></iframe>',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patterns.show', $pattern))
+            ->assertOk()
+            ->assertDontSee('data-testid="pattern-embed"', false)
+            ->assertDontSee('evil.example', false)
+            ->assertSee('Embed code could not be rendered.');
+    }
+
     public function test_pattern_show_renders_sanitized_iframe_and_blocks_unsafe_embed_code(): void
     {
         $user = User::factory()->create();

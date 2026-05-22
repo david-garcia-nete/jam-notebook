@@ -1,4 +1,5 @@
 @php
+    $rawEmbedCode = trim((string) $pattern->embed_code);
     $sanitizedEmbedCode = $pattern->sanitizedEmbedCode();
 @endphp
 
@@ -9,4 +10,6 @@
             {!! $sanitizedEmbedCode !!}
         </div>
     </div>
+@elseif (filled($rawEmbedCode))
+    <p class="text-sm text-amber-700">Embed code could not be rendered.</p>
 @endif
